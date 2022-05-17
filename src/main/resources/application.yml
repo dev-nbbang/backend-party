@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: nbbang-party
+  profiles:
+    active: local
+  jpa:
+    hibernate:
+      ddl-auto: none
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    database-platform: mysql
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQL5InnoDBDialect
+        storage_engine: innodb
+server:
+  port: 9200
+## hibernate log (공통)
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: debug
+        type:
+          descriptor:
+            sql: trace
