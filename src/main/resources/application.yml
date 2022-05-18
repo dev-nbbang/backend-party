@@ -14,6 +14,11 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.MySQL5InnoDBDialect
         storage_engine: innodb
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://129.154.222.27:3306/nbbang_party?useSSL=false&useUnicode=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+    username: root
+    password: nbbang-dev!@#
 server:
   port: 9200
 ## hibernate log (공통)
