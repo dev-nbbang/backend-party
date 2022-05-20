@@ -3,7 +3,10 @@ package com.dev.nbbang.party.global.exception;
 public enum NbbangException {
     NO_CREATE_PARTY ("BE001", "Doesn't Create Party"),
     NOT_FOUND_PARTY("BE002", "Not Found Party"),
-    NOT_FOUND_OTT("BE101", "Not Found Ott Platform"),;
+    NOT_FOUND_OTT("BE101", "Not Found Ott Platform"),
+    NO_CREATE_QUESTION("BE201", "Doesn't Create Question"),
+    NOT_FOUND_QNA("BE202", "Not Found Qna"),
+    FAIL_TO_DELETE_QNA("BE203", "Fail To Delete Qna"),;
 
 
     private String code;
