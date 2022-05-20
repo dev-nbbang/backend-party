@@ -23,11 +23,11 @@ public class PartyCreateResponse {
     private String title;
     private String partyDetail;
     private Long price;
-    private int period;
+    private Integer period;
     private String partyNotice;
 
     @Builder
-    public PartyCreateResponse(Long partyId, Ott ott, String leaderId, Integer presentHeadcount, Integer maxHeadcount, LocalDateTime regYmd, String ottAccId, String ottAccPw, Integer matchingType, String title, String partyDetail, Long price, int period, String partyNotice) {
+    public PartyCreateResponse(Long partyId, Ott ott, String leaderId, Integer presentHeadcount, Integer maxHeadcount, LocalDateTime regYmd, String ottAccId, String ottAccPw, Integer matchingType, String title, String partyDetail, Long price, Integer period, String partyNotice) {
         this.partyId = partyId;
         this.ott = ott;
         this.leaderId = leaderId;
