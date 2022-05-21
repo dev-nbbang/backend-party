@@ -24,4 +24,5 @@ public interface QnaRepository extends JpaRepository<Qna, Long> {
 
     // QnaId를 이용해 문의내역 조회히기 (삭제 검증 용도)
     Qna findByQnaId(Long qnaId);
+    
 }
