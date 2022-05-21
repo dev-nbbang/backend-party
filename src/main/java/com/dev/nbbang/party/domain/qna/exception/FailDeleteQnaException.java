@@ -19,6 +19,5 @@ public class FailDeleteQnaException extends RuntimeException {
     public NbbangException getNbbangException() {
         return this.nbbangException;
     }
-
 }
 

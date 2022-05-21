@@ -19,6 +19,5 @@ public class NoSuchQnaException extends RuntimeException {
     public NbbangException getNbbangException() {
         return this.nbbangException;
     }
-
 }
 

@@ -5,6 +5,7 @@ import com.dev.nbbang.party.domain.party.exception.NoSuchPartyException;
 import com.dev.nbbang.party.domain.party.service.PartyService;
 import com.dev.nbbang.party.domain.qna.dto.QnaDTO;
 import com.dev.nbbang.party.domain.qna.dto.request.AnswerRequest;
+import com.dev.nbbang.party.domain.qna.dto.request.QuestionCreateRequest;
 import com.dev.nbbang.party.domain.qna.dto.request.QuestionModifyRequest;
 import com.dev.nbbang.party.domain.qna.dto.response.QnaInformationResponse;
 import com.dev.nbbang.party.domain.qna.dto.response.QuestionInformationResponse;
@@ -44,7 +45,7 @@ public class QnaController {
             PartyDTO findParty = partyService.findPartyByPartyId(request.getPartyId());
 
             // 문의 등록
-            QnaDTO savedQuestion = qnaService.createQuestion(com.dev.nbbang.party.domain.qna.dto.request.QuestionCreateRequest.toEntity(request, findParty));
+            QnaDTO savedQuestion = qnaService.createQuestion(QuestionCreateRequest.toEntity(request, findParty));
 
             return ResponseEntity.status(HttpStatus.CREATED).body(CommonSuccessResponse.response(true, QuestionInformationResponse.create(savedQuestion), "성공적으로 문의를 등록했습니다."));
         } catch (NoCreateQnaException e) {
@@ -58,19 +59,19 @@ public class QnaController {
     public ResponseEntity<?> findQnaList(@PathVariable(name = "partyId") Long partyId, HttpServletRequest servletRequest) {
         log.info("[Qna Controller - Find QnA List] 질문자의 QnA 리스트 전체 조회");
 
-         try {
-             // 질문자 아이디 추출
-             String memberId = servletRequest.getHeader("X-Authorization-Id");
+        try {
+            // 질문자 아이디 추출
+            String memberId = servletRequest.getHeader("X-Authorization-Id");
 
-             List<QnaDTO> findQnaList = qnaService.findAllQnA(partyId, memberId);
+            List<QnaDTO> findQnaList = qnaService.findAllQnA(partyId, memberId);
 
-             return ResponseEntity.ok(CommonSuccessResponse.response(true, QnaListResponse.createList(findQnaList), "모든 문의내역 조회에 성공했습니다."));
+            return ResponseEntity.ok(CommonSuccessResponse.response(true, QnaListResponse.createList(findQnaList), "모든 문의내역 조회에 성공했습니다."));
 
-         } catch (NoSuchPartyException | NoSuchQnaException e) {
-             log.warn("[Qna Controller - Find QnA List] message : "+e.getMessage());
+        } catch (NoSuchPartyException | NoSuchQnaException e) {
+            log.warn("[Qna Controller - Find QnA List] message : " + e.getMessage());
 
-             return ResponseEntity.ok(CommonResponse.response(false, e.getMessage()));
-         }
+            return ResponseEntity.ok(CommonResponse.response(false, e.getMessage()));
+        }
     }
 
     @DeleteMapping(value = "/{qnaId}")
@@ -82,7 +83,7 @@ public class QnaController {
 
             return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
         } catch (FailDeleteQnaException e) {
-            log.warn("[Qna Controller - Delete Question] message : "+ e.getMessage());
+            log.warn("[Qna Controller - Delete Question] message : " + e.getMessage());
 
             return ResponseEntity.ok(CommonResponse.response(false, e.getMessage()));
         }
@@ -107,17 +108,17 @@ public class QnaController {
     public ResponseEntity<?> manageAnswer(@PathVariable(name = "qnaId") Long qnaId, @PathVariable(name = "answerType") Integer answerType, @RequestBody AnswerRequest request) {
         log.info("[Qna Controller - Manage Question] 문의 관리 (답변 등록, 삭제 , 수정)");
 
-        try {
+//        try {
             QnaDTO manageAnswer = qnaService.manageAnswer(qnaId, request.getAnswerDetail(), answerType);
 
             String responseMessage = "답변 등록 및 수정에 성공했습니다.";
-            if(answerType == 2) responseMessage = "답변 삭제에 성공했습니다.";
+            if (answerType == 2) responseMessage = "답변 삭제에 성공했습니다.";
 
             return ResponseEntity.status(HttpStatus.CREATED).body(CommonSuccessResponse.response(true, QnaInformationResponse.create(manageAnswer), responseMessage));
-        } catch (NoSuchQnaException e) {
-            log.warn("[Qna Controller - Manage Question] message : "+e.getMessage());
-
-            return ResponseEntity.ok(CommonResponse.response(false, e.getMessage()));
-        }
+//        } catch (NoSuchQnaException e) {
+//            e.printStackTrace();
+//            log.warn("[Qna Controller - Manage Question] message : " + e.getMessage());
+//            return ResponseEntity.ok(CommonResponse.response(false, e.getMessage()));
+//        }
     }
 }
