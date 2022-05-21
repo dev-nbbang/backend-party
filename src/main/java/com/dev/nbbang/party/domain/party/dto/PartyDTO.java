@@ -62,4 +62,23 @@ public class PartyDTO {
                 .partyNotice(party.getPartyNotice())
                 .build();
     }
+
+    public static Party toEntity(PartyDTO party) {
+        return Party.builder()
+                .partyId(party.getPartyId())
+                .ott(party.getOtt())
+                .leaderId(party.getLeaderId())
+                .presentHeadcount(party.getPresentHeadcount())
+                .maxHeadcount(party.getMaxHeadcount())
+                .regYmd(party.getRegYmd())
+                .ottAccId(party.getOttAccId())
+                .ottAccPw(party.getOttAccPw())
+                .matchingType(party.getMatchingType())
+                .title(party.getTitle())
+                .partyDetail(party.getPartyDetail())
+                .price(party.getPrice())
+                .period(party.getPeriod())
+                .partyNotice(party.getPartyNotice())
+                .build();
+    }
 }
