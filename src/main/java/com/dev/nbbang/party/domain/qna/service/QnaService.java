@@ -20,4 +20,7 @@ public interface QnaService {
 
     // 파티 답변 작성/수정/삭제
     QnaDTO manageAnswer(Long qnaId, String answerDetail, Integer answerType);
+
+    // 미답변 질문 리스트 목록 가져오기
+    List<QnaDTO> findAllUnansweredQuestion(Long partyId);
 }

@@ -34,7 +34,7 @@ public class QnaController {
     private final PartyService partyService;
 
     @PostMapping(value = "/new")
-    public ResponseEntity<?> createQuestion(@RequestBody com.dev.nbbang.party.domain.qna.dto.request.QuestionCreateRequest request, HttpServletRequest servletRequest) {
+    public ResponseEntity<?> createQuestion(@RequestBody QuestionCreateRequest request, HttpServletRequest servletRequest) {
         log.info("[Qna Controller - Create Question] 문의 등록");
 
         try {
@@ -63,6 +63,7 @@ public class QnaController {
             // 질문자 아이디 추출
             String memberId = servletRequest.getHeader("X-Authorization-Id");
 
+            // 리스트 없는  경우에도 성공적으로 나가는 현상 수정 필요
             List<QnaDTO> findQnaList = qnaService.findAllQnA(partyId, memberId);
 
             return ResponseEntity.ok(CommonSuccessResponse.response(true, QnaListResponse.createList(findQnaList), "모든 문의내역 조회에 성공했습니다."));
@@ -120,5 +121,14 @@ public class QnaController {
 //            log.warn("[Qna Controller - Manage Question] message : " + e.getMessage());
 //            return ResponseEntity.ok(CommonResponse.response(false, e.getMessage()));
 //        }
+    }
+
+    @GetMapping(value = "/{partyId}/unanswer/list")
+    public ResponseEntity<?> unansweredQnaList(@PathVariable(name = "partyId") Long partyId, HttpServletRequest request) {
+        log.info("[Qna Controller - Unanswerd Question]");
+
+        List<QnaDTO> unansweredQuestionList = qnaService.findAllUnansweredQuestion(partyId);
+
+        return ResponseEntity.ok(CommonSuccessResponse.response(true, QnaListResponse.createList(unansweredQuestionList), "미답변 문의내역 리스트 조회에 성공했습니다."));
     }
 }

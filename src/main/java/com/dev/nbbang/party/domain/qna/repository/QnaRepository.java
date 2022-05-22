@@ -2,6 +2,7 @@ package com.dev.nbbang.party.domain.qna.repository;
 
 import com.dev.nbbang.party.domain.party.entity.Party;
 import com.dev.nbbang.party.domain.qna.entity.Qna;
+import com.dev.nbbang.party.domain.qna.entity.QnaType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -24,5 +25,6 @@ public interface QnaRepository extends JpaRepository<Qna, Long> {
 
     // QnaId를 이용해 문의내역 조회히기 (삭제 검증 용도)
     Qna findByQnaId(Long qnaId);
-    
+
+    List<Qna> findAllByPartyAndQnaType(Party party, QnaType qnaType);
 }

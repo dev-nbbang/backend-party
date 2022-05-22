@@ -4,6 +4,7 @@ import com.dev.nbbang.party.domain.party.entity.Party;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.DynamicInsert;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 @Table(name = "QNA")
 @Getter
 @NoArgsConstructor
+@DynamicInsert
 public class Qna {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -62,14 +64,14 @@ public class Qna {
     // 답변자가 답변하거나 수정하는 경우
     public void answerQuestion(String answerDetail) {
         this.answerDetail = answerDetail;
-        this.qnaStatus = 2;
+        this.qnaStatus = 1;
         this.qnaType = QnaType.A;
     }
 
     // 답변자가 답변을 빈칸으로 변경하는 경우
     public void deleteAnswer() {
         this.answerDetail = null;
-        this.qnaStatus = 1;
+        this.qnaStatus = 2;
         this.qnaType = QnaType.Q;
     }
 }

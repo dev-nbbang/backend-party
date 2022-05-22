@@ -5,6 +5,7 @@ import com.dev.nbbang.party.domain.party.exception.NoSuchPartyException;
 import com.dev.nbbang.party.domain.party.repository.PartyRepository;
 import com.dev.nbbang.party.domain.qna.dto.QnaDTO;
 import com.dev.nbbang.party.domain.qna.entity.Qna;
+import com.dev.nbbang.party.domain.qna.entity.QnaType;
 import com.dev.nbbang.party.domain.qna.exception.FailDeleteQnaException;
 import com.dev.nbbang.party.domain.qna.exception.NoCreateQnaException;
 import com.dev.nbbang.party.domain.qna.exception.NoSuchQnaException;
@@ -61,6 +62,7 @@ public class QnaServiceImpl implements QnaService {
      * @param qnaId 삭제할 문의 아이디
      */
     @Override
+    @Transactional
     public boolean deleteQuestion(Long qnaId) {
         // 1. 문의내역 아이디로 문의내역 삭제
         qnaRepository.deleteByQnaId(qnaId);
@@ -82,6 +84,7 @@ public class QnaServiceImpl implements QnaService {
      * @return 수정한 문의내역을 담은 데이터
      */
     @Override
+    @Transactional
     public QnaDTO modifyQuestion(Long qnaId, String questionDetail) {
         // 1. 문의내역 아이디로 수정할 문의내역 가져오기
         Qna updatedQna = Optional.ofNullable(qnaRepository.findByQnaId(qnaId))
@@ -101,6 +104,7 @@ public class QnaServiceImpl implements QnaService {
      * @return 답변 이후의 문의내역 데이터
      */
     @Override
+    @Transactional
     public QnaDTO manageAnswer(Long qnaId, String answerDetail, Integer answerType) {
         // 1. 관리할 문의내역을 불러온다
         Qna managedQna = Optional.ofNullable(qnaRepository.findByQnaId(qnaId))
@@ -117,5 +121,23 @@ public class QnaServiceImpl implements QnaService {
         }
 
         return QnaDTO.create(managedQna);
+    }
+
+    /**
+     * 해당 파티의 미답변 질문 리스트를 가져온다.
+     * @param partyId 파티 고유 아이디
+     * @return 미답변 질문 리스트 데이터
+     */
+    @Override
+    public List<QnaDTO> findAllUnansweredQuestion(Long partyId) {
+        // 1. 조회핲 파티 조회하기.
+        Party findParty = Optional.ofNullable(partyRepository.findByPartyId(partyId))
+                .orElseThrow(() -> new NoSuchPartyException("등록되지 않았거나 이미 해체된 파티입니다.", NbbangException.NOT_FOUND_PARTY));
+
+        // 2. 해당 파티의 미답변 질문 리스트를 가져온다.
+        List<Qna> notAnswerList = Optional.ofNullable(qnaRepository.findAllByPartyAndQnaType(findParty, QnaType.Q))
+                .orElseThrow(() -> new NoSuchQnaException("답변하지 않은 문의내역이 없습니다.", NbbangException.NOT_FOUND_QNA));
+
+        return QnaDTO.createList(notAnswerList);
     }
 }
