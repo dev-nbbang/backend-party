@@ -90,6 +90,34 @@ class QnaRepositoryTest {
         assertThat(afterDeleteQna).isNull();
     }
 
+    @Test
+    @DisplayName("QnA 레포지토리 : 미답변 문의 내역 리스트를 성공적으로 조회한다.")
+    void 미답변_문의_내역_조회_성공() {
+        // given
+        Party party = testPartyBuilder(1L);
+
+        // when
+        qnaRepository.save(testQnaBuilder(1L));
+        qnaRepository.save(testQnaBuilder(2L));
+
+        List<Qna> findUnansweredQuestions = qnaRepository.findAllByPartyAndQnaType(party, QnaType.Q);
+
+        assertThat(findUnansweredQuestions.size()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("QnA 레포지토리 : 미답변 문의 내역 리스트를 조회하는데 실패한다.")
+    void 미답변_문의_내역_조회_실패() {
+        // given
+        Party party = testPartyBuilder(2L);
+
+        // when
+        List<Qna> findUnansweredQuestions = qnaRepository.findAllByPartyAndQnaType(party, QnaType.Q);
+
+        // then
+        assertThat(findUnansweredQuestions).isEqualTo(Collections.emptyList());
+    }
+
     private static Qna testQnaBuilder(Long qnaId) {
         return Qna.builder()
                 .qnaId(qnaId)

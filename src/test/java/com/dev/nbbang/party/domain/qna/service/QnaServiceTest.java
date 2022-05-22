@@ -27,8 +27,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -170,7 +169,7 @@ class QnaServiceTest {
         QnaDTO answerQuestion = qnaService.manageAnswer(1L, answerDetail, answerType);
 
         // then
-        assertThat(answerQuestion.getQnaStatus()).isEqualTo(2);
+        assertThat(answerQuestion.getQnaStatus()).isEqualTo(1);
         assertThat(answerQuestion.getQnaType()).isEqualTo(QnaType.A);
         assertThat(answerQuestion.getAnswerDetail()).isEqualTo(answerDetail);
     }
@@ -186,7 +185,7 @@ class QnaServiceTest {
         QnaDTO deleteAnswer = qnaService.manageAnswer(1L, "", answerType);
 
         // then
-        assertThat(deleteAnswer.getQnaStatus()).isEqualTo(1);
+        assertThat(deleteAnswer.getQnaStatus()).isEqualTo(0);
         assertThat(deleteAnswer.getQnaType()).isEqualTo(QnaType.Q);
         assertThat(deleteAnswer.getAnswerDetail()).isNull();
     }
@@ -199,6 +198,34 @@ class QnaServiceTest {
 
         // then
         assertThrows(NoSuchQnaException.class, () -> qnaService.manageAnswer(1L, "답변 완료", 2));
+    }
+
+    @Test
+    @DisplayName("Qna 서비스 : 파티장이 미답변 리스트를 성공적으로 조회한다.")
+    void 미답변_문의내역_리스트_조회_성공() {
+        // given
+        given(partyRepository.findByPartyId(anyLong())).willReturn(testPartyBuilder(1L));
+        given(qnaRepository.findAllByPartyAndQnaType(any(), any())).willReturn(testQnaListBuilder());
+
+        // when
+        List<QnaDTO> unansweredQuestion = qnaService.findAllUnansweredQuestion(1L);
+
+        // then
+        assertThat(unansweredQuestion.size()).isEqualTo(2);
+        for (QnaDTO unanswered : unansweredQuestion) {
+            assertThat(unanswered.getQnaType()).isEqualTo(QnaType.Q);
+        }
+    }
+
+    @Test
+    @DisplayName("Qna 서비스 : 파티장이 미답변 리스트 조회하는데 실패한다.")
+    void 미답변_문의내역_리스트_조회_실패() {
+        // given
+        given(partyRepository.findByPartyId(anyLong())).willReturn(testPartyBuilder(1L));
+        given(qnaRepository.findAllByPartyAndQnaType(any(), any())).willThrow(NoSuchQnaException.class);
+
+        // then
+        assertThrows(NoSuchQnaException.class, () -> qnaService.findAllUnansweredQuestion(1L));
     }
 
     private static Qna testQnaBuilder(Long qnaId) {

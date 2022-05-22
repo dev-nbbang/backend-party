@@ -270,6 +270,47 @@ class QnaControllerTest {
         assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
     }
 
+    @Test
+    @DisplayName("Qna 컨트롤러 : 미답변 문의 내역 리스트 조회 성공")
+    void 미답변_문의내역_리스트_조회_성공() throws Exception {
+        // given
+        String uri = "/qna/1/unanswer/list";
+        given(qnaService.findAllUnansweredQuestion(anyLong())).willReturn(testQnaListBuilder());
+
+        // when
+        MockHttpServletResponse response = mvc.perform(get(uri)
+                .header("X-Authorization-Id", "leader"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(true))
+                .andExpect(jsonPath("$.data.[0].qnaType").value("Q"))
+                .andExpect(jsonPath("$.data.[1].qnaType").value("Q"))
+                .andExpect(jsonPath("$.message").exists())
+                .andDo(print())
+                .andReturn().getResponse();
+
+        // then
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+    }
+
+    @Test
+    @DisplayName("Qna 컨트롤러 : 미답변 문의 내역 리스트 조회 실패")
+    void 미답변_문의내역_리스트_조회_실패() throws Exception {
+        // given
+        String uri = "/qna/1/unanswer/list";
+        given(qnaService.findAllUnansweredQuestion(anyLong())).willThrow(NoSuchQnaException.class);
+
+        // when
+        MockHttpServletResponse response = mvc.perform(get(uri)
+                .header("X-Authorization-Id", "leader"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(false))
+                .andDo(print())
+                .andReturn().getResponse();
+
+        // then
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+    }
+
     private static QnaDTO testQnaBuilder(Long qnaId) {
         return QnaDTO.builder()
                 .qnaId(qnaId)
