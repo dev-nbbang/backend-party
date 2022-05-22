@@ -51,8 +51,9 @@ public class QnaServiceImpl implements QnaService {
                 .orElseThrow(() -> new NoSuchPartyException("등록되지 않았거나 이미 해체된 파티입니다.", NbbangException.NOT_FOUND_PARTY));
 
         // 2. 질문자 아이디와 파티를 이용해 질문자가 문의한 모든 문의사항을 조회한다.
-        List<Qna> findQnaList = Optional.ofNullable(qnaRepository.findAllByPartyAndQnaSender(findParty, senderId))
-                .orElseThrow(() -> new NoSuchQnaException("등록된 문의사항이 없습니다.", NbbangException.NOT_FOUND_QNA));
+        List<Qna> findQnaList = qnaRepository.findAllByPartyAndQnaSender(findParty, senderId);
+
+        if(findQnaList.isEmpty()) throw new NoSuchQnaException("등록된 문의 내역이 없습니다.", NbbangException.NOT_FOUND_QNA);
 
         return QnaDTO.createList(findQnaList);
     }
@@ -135,9 +136,10 @@ public class QnaServiceImpl implements QnaService {
                 .orElseThrow(() -> new NoSuchPartyException("등록되지 않았거나 이미 해체된 파티입니다.", NbbangException.NOT_FOUND_PARTY));
 
         // 2. 해당 파티의 미답변 질문 리스트를 가져온다.
-        List<Qna> notAnswerList = Optional.ofNullable(qnaRepository.findAllByPartyAndQnaType(findParty, QnaType.Q))
-                .orElseThrow(() -> new NoSuchQnaException("답변하지 않은 문의내역이 없습니다.", NbbangException.NOT_FOUND_QNA));
+        List<Qna> unansweredQuestions = qnaRepository.findAllByPartyAndQnaType(findParty, QnaType.Q);
 
-        return QnaDTO.createList(notAnswerList);
+        if(unansweredQuestions.isEmpty()) throw new NoSuchQnaException("답변하지 않은 문의 내역이 없습니다.", NbbangException.NOT_FOUND_QNA);
+
+        return QnaDTO.createList(unansweredQuestions);
     }
 }
