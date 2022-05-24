@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @NoArgsConstructor
 @Getter
 public class OttDTO {
@@ -41,5 +44,20 @@ public class OttDTO {
                 .ottPrice(ott.getOttPrice())
                 .ottImage(ott.getOttImage())
                 .build();
+    }
+
+    public static List<OttDTO> createList(List<Ott> findOttList) {
+        List<OttDTO> ottList = new ArrayList<>();
+        for (Ott ott : findOttList) {
+            ottList.add(OttDTO.builder()
+                    .ottId(ott.getOttId())
+                    .ottName(ott.getOttName())
+                    .ottHeadcount(ott.getOttHeadcount())
+                    .ottPrice(ott.getOttPrice())
+                    .ottImage(ott.getOttImage())
+                    .build());
+        }
+
+        return ottList;
     }
 }
