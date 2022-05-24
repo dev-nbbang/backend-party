@@ -5,7 +5,7 @@ import com.dev.nbbang.party.domain.party.exception.NoSuchPartyException;
 import com.dev.nbbang.party.domain.party.repository.PartyRepository;
 import com.dev.nbbang.party.domain.qna.dto.QnaDTO;
 import com.dev.nbbang.party.domain.qna.entity.Qna;
-import com.dev.nbbang.party.domain.qna.entity.QnaType;
+import com.dev.nbbang.party.domain.qna.entity.QnaStatus;
 import com.dev.nbbang.party.domain.qna.exception.FailDeleteQnaException;
 import com.dev.nbbang.party.domain.qna.exception.NoCreateQnaException;
 import com.dev.nbbang.party.domain.qna.exception.NoSuchQnaException;
@@ -136,7 +136,7 @@ public class QnaServiceImpl implements QnaService {
                 .orElseThrow(() -> new NoSuchPartyException("등록되지 않았거나 이미 해체된 파티입니다.", NbbangException.NOT_FOUND_PARTY));
 
         // 2. 해당 파티의 미답변 질문 리스트를 가져온다.
-        List<Qna> unansweredQuestions = qnaRepository.findAllByPartyAndQnaType(findParty, QnaType.Q);
+        List<Qna> unansweredQuestions = qnaRepository.findAllByPartyAndQnaStatus(findParty, QnaStatus.Q);
 
         if(unansweredQuestions.isEmpty()) throw new NoSuchQnaException("답변하지 않은 문의 내역이 없습니다.", NbbangException.NOT_FOUND_QNA);
 

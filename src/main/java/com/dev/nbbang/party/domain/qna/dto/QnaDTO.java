@@ -2,7 +2,7 @@ package com.dev.nbbang.party.domain.qna.dto;
 
 import com.dev.nbbang.party.domain.party.entity.Party;
 import com.dev.nbbang.party.domain.qna.entity.Qna;
-import com.dev.nbbang.party.domain.qna.entity.QnaType;
+import com.dev.nbbang.party.domain.qna.entity.QnaStatus;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,18 +17,16 @@ public class QnaDTO {
     private Long qnaId;
     private Party party;
     private LocalDateTime qnaYmd;
-    private QnaType qnaType;
     private String qnaSender;
-    private Integer qnaStatus;
+    private QnaStatus qnaStatus;
     private String questionDetail;
     private String answerDetail;
 
     @Builder
-    public QnaDTO(Long qnaId, Party party, LocalDateTime qnaYmd, QnaType qnaType, String qnaSender, Integer qnaStatus, String questionDetail, String answerDetail) {
+    public QnaDTO(Long qnaId, Party party, LocalDateTime qnaYmd, String qnaSender, QnaStatus qnaStatus, String questionDetail, String answerDetail) {
         this.qnaId = qnaId;
         this.party = party;
         this.qnaYmd = qnaYmd;
-        this.qnaType = qnaType;
         this.qnaSender = qnaSender;
         this.qnaStatus = qnaStatus;
         this.questionDetail = questionDetail;
@@ -40,7 +38,6 @@ public class QnaDTO {
                 .qnaId(qna.getQnaId())
                 .party(qna.getParty())
                 .qnaYmd(qna.getQnaYmd())
-                .qnaType(qna.getQnaType())
                 .qnaSender(qna.getQnaSender())
                 .qnaStatus(qna.getQnaStatus())
                 .questionDetail(qna.getQuestionDetail())
@@ -55,7 +52,6 @@ public class QnaDTO {
                     .qnaId(qna.getQnaId())
                     .party(qna.getParty())
                     .qnaYmd(qna.getQnaYmd())
-                    .qnaType(qna.getQnaType())
                     .qnaSender(qna.getQnaSender())
                     .qnaStatus(qna.getQnaStatus())
                     .questionDetail(qna.getQuestionDetail())

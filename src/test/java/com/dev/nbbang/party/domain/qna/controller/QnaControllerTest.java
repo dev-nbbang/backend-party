@@ -6,12 +6,15 @@ import com.dev.nbbang.party.domain.qna.dto.QnaDTO;
 import com.dev.nbbang.party.domain.qna.dto.request.AnswerRequest;
 import com.dev.nbbang.party.domain.qna.dto.request.QuestionCreateRequest;
 import com.dev.nbbang.party.domain.qna.dto.request.QuestionModifyRequest;
-import com.dev.nbbang.party.domain.qna.entity.QnaType;
+import com.dev.nbbang.party.domain.qna.entity.QnaStatus;
 import com.dev.nbbang.party.domain.qna.exception.FailDeleteQnaException;
 import com.dev.nbbang.party.domain.qna.exception.NoCreateQnaException;
 import com.dev.nbbang.party.domain.qna.exception.NoSuchQnaException;
 import com.dev.nbbang.party.domain.qna.service.QnaService;
+import com.dev.nbbang.party.global.exception.ExceptionController;
+import com.dev.nbbang.party.global.exception.NbbangException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +26,8 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MockMvcBuilder;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -31,7 +36,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doNothing;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -52,6 +56,11 @@ class QnaControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @BeforeEach
+    void setUp() {
+        this.mvc = MockMvcBuilders.standaloneSetup(new QnaController(this.qnaService, this.partyService)).setControllerAdvice(ExceptionController.class).build();
+    }
+
     @Test
     @DisplayName("Qna 컨트롤러 : 파티 문의 생성 성공")
     void 파티_문의_생성_성공() throws Exception {
@@ -69,9 +78,8 @@ class QnaControllerTest {
                 .andExpect(jsonPath("$.status").value(true))
                 .andExpect(jsonPath("$.data.qnaId").value(1))
                 .andExpect(jsonPath("$.data.partyId").value(1))
-                .andExpect(jsonPath("$.data.qnaType").value("Q"))
                 .andExpect(jsonPath("$.data.qnaSender").value("sender"))
-                .andExpect(jsonPath("$.data.qnaStatus").value(1))
+                .andExpect(jsonPath("$.data.qnaStatus").value("Q"))
                 .andExpect(jsonPath("$.data.questionDetail").value("질문 내용"))
                 .andExpect(jsonPath("$.message").exists())
                 .andReturn().getResponse();
@@ -86,7 +94,7 @@ class QnaControllerTest {
         // given
         String uri = "/qna/new";
         given(partyService.findPartyByPartyId(anyLong())).willReturn(testPartyBuilder(1L));
-        given(qnaService.createQuestion(any())).willThrow(NoCreateQnaException.class);
+        given(qnaService.createQuestion(any())).willThrow(new NoCreateQnaException("파티 문의 생성 실패", NbbangException.NO_CREATE_QUESTION));
 
         //when
         MockHttpServletResponse response = mvc.perform(post(uri)
@@ -127,7 +135,7 @@ class QnaControllerTest {
     void 파티_문의_답변_조회_실패() throws Exception {
         // given
         String uri = "/qna/1";
-        given(qnaService.findAllQnA(anyLong(), anyString())).willThrow(NoSuchQnaException.class);
+        given(qnaService.findAllQnA(anyLong(), anyString())).willThrow(new NoSuchQnaException("문의내역 없음",NbbangException.NOT_FOUND_QNA));
 
         // when
         MockHttpServletResponse response = mvc.perform(get(uri)
@@ -162,7 +170,7 @@ class QnaControllerTest {
     void 파티_문의_삭제_실패() throws Exception {
         // given
         String uri = "/qna/1";
-        given(qnaService.deleteQuestion(anyLong())).willThrow(FailDeleteQnaException.class);
+        given(qnaService.deleteQuestion(anyLong())).willThrow(new FailDeleteQnaException("삭제 실패", NbbangException.FAIL_TO_DELETE_QNA));
 
         // when
         MockHttpServletResponse response = mvc.perform(delete(uri)
@@ -193,8 +201,7 @@ class QnaControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value(true))
                 .andExpect(jsonPath("$.data.questionDetail").value(questionDetail))
-                .andExpect(jsonPath("$.data.qnaStatus").value(1))
-                .andExpect(jsonPath("$.data.qnaType").value("Q"))
+                .andExpect(jsonPath("$.data.qnaStatus").value("Q"))
                 .andReturn().getResponse();
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.CREATED.value());
@@ -205,7 +212,7 @@ class QnaControllerTest {
     void 파티_문의_수정_실패() throws Exception {
         // given
         String uri = "/qna/1";
-        given(qnaService.modifyQuestion(anyLong(), anyString())).willThrow(NoSuchQnaException.class);
+        given(qnaService.modifyQuestion(anyLong(), anyString())).willThrow(new NoSuchQnaException("문의내역 없음",NbbangException.NOT_FOUND_QNA));
 
         // when
         MockHttpServletResponse response = mvc.perform(put(uri)
@@ -236,9 +243,8 @@ class QnaControllerTest {
                 .andExpect(jsonPath("$.status").value(true))
                 .andExpect(jsonPath("$.data.qnaId").value(1))
                 .andExpect(jsonPath("$.data.partyId").value(1))
-                .andExpect(jsonPath("$.data.qnaType").value("A"))
                 .andExpect(jsonPath("$.data.qnaSender").value("sender"))
-                .andExpect(jsonPath("$.data.qnaStatus").value(2))
+                .andExpect(jsonPath("$.data.qnaStatus").value("A"))
                 .andExpect(jsonPath("$.data.questionDetail").value("질문 내용"))
                 .andExpect(jsonPath("$.data.answerDetail").value("답변 내용"))
                 .andExpect(jsonPath("$.message").exists())
@@ -254,7 +260,7 @@ class QnaControllerTest {
     void 파티_답변_관리_실패() throws Exception {
         // given
         String uri = "/qna/1/answer/0";
-        given(qnaService.manageAnswer(anyLong(), anyString(), anyInt())).willThrow(NoSuchQnaException.class);
+        given(qnaService.manageAnswer(anyLong(), anyString(), anyInt())).willThrow(new NoSuchQnaException("문의내역 없음",NbbangException.NOT_FOUND_QNA));
 
         // when
         MockHttpServletResponse response = mvc.perform(put(uri)
@@ -282,8 +288,8 @@ class QnaControllerTest {
                 .header("X-Authorization-Id", "leader"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(true))
-                .andExpect(jsonPath("$.data.[0].qnaType").value("Q"))
-                .andExpect(jsonPath("$.data.[1].qnaType").value("Q"))
+                .andExpect(jsonPath("$.data.[0].qnaStatus").value("Q"))
+                .andExpect(jsonPath("$.data.[1].qnaStatus").value("Q"))
                 .andExpect(jsonPath("$.message").exists())
                 .andDo(print())
                 .andReturn().getResponse();
@@ -297,7 +303,7 @@ class QnaControllerTest {
     void 미답변_문의내역_리스트_조회_실패() throws Exception {
         // given
         String uri = "/qna/1/unanswer/list";
-        given(qnaService.findAllUnansweredQuestion(anyLong())).willThrow(NoSuchQnaException.class);
+        given(qnaService.findAllUnansweredQuestion(anyLong())).willThrow(new NoSuchQnaException("문의내역 없음",NbbangException.NOT_FOUND_QNA));
 
         // when
         MockHttpServletResponse response = mvc.perform(get(uri)
@@ -316,9 +322,8 @@ class QnaControllerTest {
                 .qnaId(qnaId)
                 .party(PartyDTO.toEntity(testPartyBuilder(1L)))
                 .qnaYmd(LocalDateTime.now())
-                .qnaType(QnaType.Q)
                 .qnaSender("sender")
-                .qnaStatus(1)
+                .qnaStatus(QnaStatus.Q)
                 .questionDetail("질문 내용")
                 .build();
     }
@@ -328,9 +333,8 @@ class QnaControllerTest {
                 .qnaId(1L)
                 .party(PartyDTO.toEntity(testPartyBuilder(1L)))
                 .qnaYmd(LocalDateTime.now())
-                .qnaType(QnaType.Q)
                 .qnaSender("sender")
-                .qnaStatus(1)
+                .qnaStatus(QnaStatus.Q)
                 .questionDetail(questionDetail)
                 .build();
     }
@@ -340,9 +344,8 @@ class QnaControllerTest {
                 .qnaId(1L)
                 .party(PartyDTO.toEntity(testPartyBuilder(1L)))
                 .qnaYmd(LocalDateTime.now())
-                .qnaType(QnaType.A)
                 .qnaSender("sender")
-                .qnaStatus(2)
+                .qnaStatus(QnaStatus.A)
                 .questionDetail("질문 내용")
                 .answerDetail(answerDetail)
                 .build();

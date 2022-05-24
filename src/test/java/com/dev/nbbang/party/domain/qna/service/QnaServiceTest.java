@@ -5,24 +5,21 @@ import com.dev.nbbang.party.domain.party.exception.NoSuchPartyException;
 import com.dev.nbbang.party.domain.party.repository.PartyRepository;
 import com.dev.nbbang.party.domain.qna.dto.QnaDTO;
 import com.dev.nbbang.party.domain.qna.entity.Qna;
-import com.dev.nbbang.party.domain.qna.entity.QnaType;
+import com.dev.nbbang.party.domain.qna.entity.QnaStatus;
 import com.dev.nbbang.party.domain.qna.exception.FailDeleteQnaException;
 import com.dev.nbbang.party.domain.qna.exception.NoCreateQnaException;
 import com.dev.nbbang.party.domain.qna.exception.NoSuchQnaException;
 import com.dev.nbbang.party.domain.qna.repository.QnaRepository;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -54,7 +51,7 @@ class QnaServiceTest {
         // then
         assertThat(savedQuestion.getQnaId()).isEqualTo(1L);
         assertThat(savedQuestion.getQnaSender()).isEqualTo("sender");
-        assertThat(savedQuestion.getQnaType()).isEqualTo(QnaType.Q);
+        assertThat(savedQuestion.getQnaStatus()).isEqualTo(QnaStatus.Q);
     }
 
     @Test
@@ -169,8 +166,7 @@ class QnaServiceTest {
         QnaDTO answerQuestion = qnaService.manageAnswer(1L, answerDetail, answerType);
 
         // then
-        assertThat(answerQuestion.getQnaStatus()).isEqualTo(1);
-        assertThat(answerQuestion.getQnaType()).isEqualTo(QnaType.A);
+        assertThat(answerQuestion.getQnaStatus()).isEqualTo(QnaStatus.A);
         assertThat(answerQuestion.getAnswerDetail()).isEqualTo(answerDetail);
     }
 
@@ -185,8 +181,7 @@ class QnaServiceTest {
         QnaDTO deleteAnswer = qnaService.manageAnswer(1L, "", answerType);
 
         // then
-        assertThat(deleteAnswer.getQnaStatus()).isEqualTo(0);
-        assertThat(deleteAnswer.getQnaType()).isEqualTo(QnaType.Q);
+        assertThat(deleteAnswer.getQnaStatus()).isEqualTo(QnaStatus.Q);
         assertThat(deleteAnswer.getAnswerDetail()).isNull();
     }
 
@@ -205,7 +200,7 @@ class QnaServiceTest {
     void 미답변_문의내역_리스트_조회_성공() {
         // given
         given(partyRepository.findByPartyId(anyLong())).willReturn(testPartyBuilder(1L));
-        given(qnaRepository.findAllByPartyAndQnaType(any(), any())).willReturn(testQnaListBuilder());
+        given(qnaRepository.findAllByPartyAndQnaStatus(any(), any())).willReturn(testQnaListBuilder());
 
         // when
         List<QnaDTO> unansweredQuestion = qnaService.findAllUnansweredQuestion(1L);
@@ -213,7 +208,7 @@ class QnaServiceTest {
         // then
         assertThat(unansweredQuestion.size()).isEqualTo(2);
         for (QnaDTO unanswered : unansweredQuestion) {
-            assertThat(unanswered.getQnaType()).isEqualTo(QnaType.Q);
+            assertThat(unanswered.getQnaStatus()).isEqualTo(QnaStatus.Q);
         }
     }
 
@@ -222,7 +217,7 @@ class QnaServiceTest {
     void 미답변_문의내역_리스트_조회_실패() {
         // given
         given(partyRepository.findByPartyId(anyLong())).willReturn(testPartyBuilder(1L));
-        given(qnaRepository.findAllByPartyAndQnaType(any(), any())).willThrow(NoSuchQnaException.class);
+        given(qnaRepository.findAllByPartyAndQnaStatus(any(), any())).willThrow(NoSuchQnaException.class);
 
         // then
         assertThrows(NoSuchQnaException.class, () -> qnaService.findAllUnansweredQuestion(1L));
@@ -233,9 +228,8 @@ class QnaServiceTest {
                 .qnaId(qnaId)
                 .party(testPartyBuilder(1L))
                 .qnaYmd(LocalDateTime.now())
-                .qnaType(QnaType.Q)
                 .qnaSender("sender")
-                .qnaStatus(1)
+                .qnaStatus(QnaStatus.Q)
                 .questionDetail("질문 내용")
                 .build();
     }

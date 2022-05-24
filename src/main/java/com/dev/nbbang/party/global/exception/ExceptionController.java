@@ -10,11 +10,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 @Slf4j
 public class ExceptionController {
-    @ExceptionHandler(NoSuchQnaException.class)
-    public ResponseEntity<CommonResponse> handleNotFoundQnaException(Exception e) {
-        e.printStackTrace();
+    @ExceptionHandler(BaseException.class)
+    public ResponseEntity<CommonResponse> handleNotFoundQnaException(BaseException e) {
+        log.warn("Nbbang Exception Code : " + e.getErrorCode());
+        log.warn("Nbbang Exception message : " + e.getMessage());
 
         return ResponseEntity.ok(CommonResponse.response(false, e.getMessage()));
     }
-
 }

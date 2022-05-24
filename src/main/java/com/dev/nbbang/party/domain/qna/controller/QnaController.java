@@ -37,96 +37,71 @@ public class QnaController {
     public ResponseEntity<?> createQuestion(@RequestBody QuestionCreateRequest request, HttpServletRequest servletRequest) {
         log.info("[Qna Controller - Create Question] 문의 등록");
 
-        try {
-            // requestBody로 받지만 혹시 여기서 사용하는게 좋은지 판단 필요
-            String memberId = servletRequest.getHeader("X-Authorization-Id");
+        // requestBody로 받지만 혹시 여기서 사용하는게 좋은지 판단 필요
+        String memberId = servletRequest.getHeader("X-Authorization-Id");
 
-            // 파티 아이디로 파티 있는지 조회하기
-            PartyDTO findParty = partyService.findPartyByPartyId(request.getPartyId());
+        // 파티 아이디로 파티 있는지 조회하기
+        PartyDTO findParty = partyService.findPartyByPartyId(request.getPartyId());
 
-            // 문의 등록
-            QnaDTO savedQuestion = qnaService.createQuestion(QuestionCreateRequest.toEntity(request, findParty));
+        // 문의 등록
+        QnaDTO savedQuestion = qnaService.createQuestion(QuestionCreateRequest.toEntity(request, findParty));
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(CommonSuccessResponse.response(true, QuestionInformationResponse.create(savedQuestion), "성공적으로 문의를 등록했습니다."));
-        } catch (NoCreateQnaException e) {
-            log.warn("[Qna Controller - Create Question] message : " + e.getMessage());
+        return ResponseEntity.status(HttpStatus.CREATED).body(CommonSuccessResponse.response(true, QuestionInformationResponse.create(savedQuestion), "성공적으로 문의를 등록했습니다."));
 
-            return ResponseEntity.ok(CommonResponse.response(false, e.getMessage()));
-        }
     }
 
     @GetMapping(value = "/{partyId}")
     public ResponseEntity<?> findQnaList(@PathVariable(name = "partyId") Long partyId, HttpServletRequest servletRequest) {
         log.info("[Qna Controller - Find QnA List] 질문자의 QnA 리스트 전체 조회");
 
-        try {
-            // 질문자 아이디 추출
-            String memberId = servletRequest.getHeader("X-Authorization-Id");
+        // 질문자 아이디 추출
+        String memberId = servletRequest.getHeader("X-Authorization-Id");
 
-            // 리스트 없는  경우에도 성공적으로 나가는 현상 수정 필요
-            List<QnaDTO> findQnaList = qnaService.findAllQnA(partyId, memberId);
+        // 리스트 없는  경우에도 성공적으로 나가는 현상 수정 필요
+        List<QnaDTO> findQnaList = qnaService.findAllQnA(partyId, memberId);
 
-            return ResponseEntity.ok(CommonSuccessResponse.response(true, QnaListResponse.createList(findQnaList), "모든 문의내역 조회에 성공했습니다."));
-
-        } catch (NoSuchPartyException | NoSuchQnaException e) {
-            log.warn("[Qna Controller - Find QnA List] message : " + e.getMessage());
-
-            return ResponseEntity.ok(CommonResponse.response(false, e.getMessage()));
-        }
+        return ResponseEntity.ok(CommonSuccessResponse.response(true, QnaListResponse.createList(findQnaList), "모든 문의내역 조회에 성공했습니다."));
     }
 
     @DeleteMapping(value = "/{qnaId}")
     public ResponseEntity<?> deleteQuestion(@PathVariable(name = "qnaId") Long qnaId) {
         log.info("[Qna Controller - Delete Question] 문의 삭제");
 
-        try {
-            qnaService.deleteQuestion(qnaId);
+        // 문의내역 삭제
+        qnaService.deleteQuestion(qnaId);
 
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-        } catch (FailDeleteQnaException e) {
-            log.warn("[Qna Controller - Delete Question] message : " + e.getMessage());
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
 
-            return ResponseEntity.ok(CommonResponse.response(false, e.getMessage()));
-        }
     }
 
     @PutMapping(value = "/{qnaId}")
     public ResponseEntity<?> modifyQuestionDetail(@RequestBody QuestionModifyRequest request, @PathVariable(name = "qnaId") Long qnaId) {
         log.info("[Qna Controller - Modify Question Detail] 문의 수정");
 
-        try {
-            QnaDTO modifiedQuestion = qnaService.modifyQuestion(qnaId, request.getQuestionDetail());
+        // 문의 내역 수정 후 수정된 문의 내역 가져오기
+        QnaDTO modifiedQuestion = qnaService.modifyQuestion(qnaId, request.getQuestionDetail());
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(CommonSuccessResponse.response(true, QuestionInformationResponse.create(modifiedQuestion), "문의 내용이 성공적으로 수정되었습니다."));
-        } catch (NoSuchQnaException e) {
-            log.warn("[Qna Controller - Modify Question Detail] message : " + e.getMessage());
-
-            return ResponseEntity.ok(CommonResponse.response(false, e.getMessage()));
-        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(CommonSuccessResponse.response(true, QuestionInformationResponse.create(modifiedQuestion), "문의 내용이 성공적으로 수정되었습니다."));
     }
 
     @PutMapping(value = "/{qnaId}/answer/{answerType}")
     public ResponseEntity<?> manageAnswer(@PathVariable(name = "qnaId") Long qnaId, @PathVariable(name = "answerType") Integer answerType, @RequestBody AnswerRequest request) {
         log.info("[Qna Controller - Manage Question] 문의 관리 (답변 등록, 삭제 , 수정)");
 
-//        try {
-            QnaDTO manageAnswer = qnaService.manageAnswer(qnaId, request.getAnswerDetail(), answerType);
+        // 파티장이 문의 내역 답변 관리
+        QnaDTO manageAnswer = qnaService.manageAnswer(qnaId, request.getAnswerDetail(), answerType);
 
-            String responseMessage = "답변 등록 및 수정에 성공했습니다.";
-            if (answerType == 2) responseMessage = "답변 삭제에 성공했습니다.";
+        String responseMessage = "답변 등록 및 수정에 성공했습니다.";
+        if (answerType == 2) responseMessage = "답변 삭제에 성공했습니다.";
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(CommonSuccessResponse.response(true, QnaInformationResponse.create(manageAnswer), responseMessage));
-//        } catch (NoSuchQnaException e) {
-//            e.printStackTrace();
-//            log.warn("[Qna Controller - Manage Question] message : " + e.getMessage());
-//            return ResponseEntity.ok(CommonResponse.response(false, e.getMessage()));
-//        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(CommonSuccessResponse.response(true, QnaInformationResponse.create(manageAnswer), responseMessage));
     }
 
     @GetMapping(value = "/{partyId}/unanswer/list")
     public ResponseEntity<?> unansweredQnaList(@PathVariable(name = "partyId") Long partyId, HttpServletRequest request) {
         log.info("[Qna Controller - Unanswerd Question]");
 
+        // 파티장이 미답변 질문 리스트를 조회
         List<QnaDTO> unansweredQuestionList = qnaService.findAllUnansweredQuestion(partyId);
 
         return ResponseEntity.ok(CommonSuccessResponse.response(true, QnaListResponse.createList(unansweredQuestionList), "미답변 문의내역 리스트 조회에 성공했습니다."));

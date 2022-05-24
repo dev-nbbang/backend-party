@@ -2,8 +2,7 @@ package com.dev.nbbang.party.domain.qna.repository;
 
 import com.dev.nbbang.party.domain.party.entity.Party;
 import com.dev.nbbang.party.domain.qna.entity.Qna;
-import com.dev.nbbang.party.domain.qna.entity.QnaType;
-import org.assertj.core.api.Assertions;
+import com.dev.nbbang.party.domain.qna.entity.QnaStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +15,6 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -35,7 +33,7 @@ class QnaRepositoryTest {
         Qna findQuestion = qnaRepository.findByQnaId(savedQuestion.getQnaId());
 
         // then
-        assertThat(savedQuestion.getQnaType()).isEqualTo(findQuestion.getQnaType());
+        assertThat(savedQuestion.getQnaStatus()).isEqualTo(findQuestion.getQnaStatus());
         assertThat(savedQuestion.getQnaSender()).isEqualTo(findQuestion.getQnaSender());
         assertThat(savedQuestion.getQnaId()).isEqualTo(findQuestion.getQnaId());
         assertThat(savedQuestion.getQnaStatus()).isEqualTo(findQuestion.getQnaStatus());
@@ -112,7 +110,7 @@ class QnaRepositoryTest {
         Party party = testPartyBuilder(2L);
 
         // when
-        List<Qna> findUnansweredQuestions = qnaRepository.findAllByPartyAndQnaType(party, QnaType.Q);
+        List<Qna> findUnansweredQuestions = qnaRepository.findAllByPartyAndQnaStatus(party, QnaStatus.Q);
 
         // then
         assertThat(findUnansweredQuestions).isEqualTo(Collections.emptyList());
@@ -123,9 +121,8 @@ class QnaRepositoryTest {
                 .qnaId(qnaId)
                 .party(testPartyBuilder(1L))
                 .qnaYmd(LocalDateTime.now())
-                .qnaType(QnaType.Q)
                 .qnaSender("sender")
-                .qnaStatus(1)
+                .qnaStatus(QnaStatus.Q)
                 .questionDetail("질문 내용")
                 .build();
     }
