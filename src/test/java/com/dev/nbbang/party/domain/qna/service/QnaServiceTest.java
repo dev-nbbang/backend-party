@@ -4,6 +4,7 @@ import com.dev.nbbang.party.domain.party.entity.Party;
 import com.dev.nbbang.party.domain.party.exception.NoSuchPartyException;
 import com.dev.nbbang.party.domain.party.repository.PartyRepository;
 import com.dev.nbbang.party.domain.qna.dto.QnaDTO;
+import com.dev.nbbang.party.domain.qna.entity.AnswerType;
 import com.dev.nbbang.party.domain.qna.entity.Qna;
 import com.dev.nbbang.party.domain.qna.entity.QnaStatus;
 import com.dev.nbbang.party.domain.qna.exception.FailDeleteQnaException;
@@ -158,12 +159,11 @@ class QnaServiceTest {
     @DisplayName("Qna 서비스 : 파티장이 답변내역 등록 및 수정에 성공한다. answerType =0,1")
     void 답변_등록_및_수정_성공() {
         // given
-        Integer answerType = 0;
         String answerDetail = "답변 완료";
         given(qnaRepository.findByQnaId(anyLong())).willReturn(testQnaBuilder(1L));
 
         // when
-        QnaDTO answerQuestion = qnaService.manageAnswer(1L, answerDetail, answerType);
+        QnaDTO answerQuestion = qnaService.manageAnswer(1L, answerDetail, AnswerType.NEW);
 
         // then
         assertThat(answerQuestion.getQnaStatus()).isEqualTo(QnaStatus.A);
@@ -178,7 +178,7 @@ class QnaServiceTest {
         given(qnaRepository.findByQnaId(anyLong())).willReturn(testQnaBuilder(1L));
 
         // when
-        QnaDTO deleteAnswer = qnaService.manageAnswer(1L, "", answerType);
+        QnaDTO deleteAnswer = qnaService.manageAnswer(1L, "", AnswerType.DELETE);
 
         // then
         assertThat(deleteAnswer.getQnaStatus()).isEqualTo(QnaStatus.Q);
@@ -192,7 +192,7 @@ class QnaServiceTest {
         given(qnaRepository.findByQnaId(anyLong())).willThrow(NoSuchQnaException.class);
 
         // then
-        assertThrows(NoSuchQnaException.class, () -> qnaService.manageAnswer(1L, "답변 완료", 2));
+        assertThrows(NoSuchQnaException.class, () -> qnaService.manageAnswer(1L, "답변 완료", AnswerType.MODIFY));
     }
 
     @Test

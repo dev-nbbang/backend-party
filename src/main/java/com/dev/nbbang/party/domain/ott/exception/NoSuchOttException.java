@@ -1,11 +1,11 @@
 package com.dev.nbbang.party.domain.ott.exception;
 
 
-import com.dev.nbbang.party.global.exception.BaseException;
+import com.dev.nbbang.party.global.exception.NbbangCommonException;
 import com.dev.nbbang.party.global.exception.NbbangException;
 import org.springframework.http.HttpStatus;
 
-public class NoSuchOttException extends BaseException {
+public class NoSuchOttException extends NbbangCommonException {
     private final String message;
     private final NbbangException nbbangException;
 

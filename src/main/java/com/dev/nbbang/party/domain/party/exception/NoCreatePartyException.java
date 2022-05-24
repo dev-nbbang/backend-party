@@ -1,11 +1,11 @@
 package com.dev.nbbang.party.domain.party.exception;
 
 
-import com.dev.nbbang.party.global.exception.BaseException;
+import com.dev.nbbang.party.global.exception.NbbangCommonException;
 import com.dev.nbbang.party.global.exception.NbbangException;
 import org.springframework.http.HttpStatus;
 
-public class NoCreatePartyException extends BaseException {
+public class NoCreatePartyException extends NbbangCommonException {
     private final String message;
     private final NbbangException nbbangException;
 

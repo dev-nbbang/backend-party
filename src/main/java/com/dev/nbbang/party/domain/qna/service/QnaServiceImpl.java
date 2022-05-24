@@ -4,6 +4,7 @@ import com.dev.nbbang.party.domain.party.entity.Party;
 import com.dev.nbbang.party.domain.party.exception.NoSuchPartyException;
 import com.dev.nbbang.party.domain.party.repository.PartyRepository;
 import com.dev.nbbang.party.domain.qna.dto.QnaDTO;
+import com.dev.nbbang.party.domain.qna.entity.AnswerType;
 import com.dev.nbbang.party.domain.qna.entity.Qna;
 import com.dev.nbbang.party.domain.qna.entity.QnaStatus;
 import com.dev.nbbang.party.domain.qna.exception.FailDeleteQnaException;
@@ -106,17 +107,17 @@ public class QnaServiceImpl implements QnaService {
      */
     @Override
     @Transactional
-    public QnaDTO manageAnswer(Long qnaId, String answerDetail, Integer answerType) {
+    public QnaDTO manageAnswer(Long qnaId, String answerDetail, AnswerType answerType) {
         // 1. 관리할 문의내역을 불러온다
         Qna managedQna = Optional.ofNullable(qnaRepository.findByQnaId(qnaId))
                 .orElseThrow(() -> new NoSuchQnaException("등록되지 않았거나 삭제된 질문자에 의해 삭제된 문의내역입니다.", NbbangException.NOT_FOUND_QNA));
 
         // 2. 문의에 대한 답변에 따라 다르게
-        if(answerType == 0 || answerType == 1) {
+        if(answerType != AnswerType.DELETE) {
             // 문의에 대한 새로운 답변 ( 1 -> 2)
             managedQna.answerQuestion(answerDetail);
         }
-        if(answerType == 2) {
+        else {
             // 기존 답변 빈칸으로 수정 ( 2 -> 1)
             managedQna.deleteAnswer();
         }
