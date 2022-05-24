@@ -1,15 +1,15 @@
-package com.dev.nbbang.party.domain.party.exception;
+package com.dev.nbbang.party.domain.qna.exception;
 
 
 import com.dev.nbbang.party.global.exception.BaseException;
 import com.dev.nbbang.party.global.exception.NbbangException;
 import org.springframework.http.HttpStatus;
 
-public class NoCreatePartyException extends BaseException {
+public class NoSuchQnaException extends BaseException {
     private final String message;
     private final NbbangException nbbangException;
 
-    public NoCreatePartyException(String message, NbbangException nbbangException) {
+    public NoSuchQnaException(String message, NbbangException nbbangException) {
         this.message = message;
         this.nbbangException = nbbangException;
     }
