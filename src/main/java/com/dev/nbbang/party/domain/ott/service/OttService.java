@@ -13,7 +13,7 @@ public interface OttService {
     List<OttDTO> findAllOtt();
 
     // Ott 서비스 정보 수정
-    OttDTO modifyOtt(Ott ott);
+    OttDTO modifyOtt(Long ottId, Ott ott);
 
     // Ott 서비스 추가
     OttDTO saveOtt(Ott ott);

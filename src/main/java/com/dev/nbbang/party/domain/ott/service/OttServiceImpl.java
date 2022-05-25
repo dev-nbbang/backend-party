@@ -54,9 +54,9 @@ public class OttServiceImpl implements OttService {
      * @return 수정된 Ott 플랫폼 정보
      */
     @Override
-    public OttDTO modifyOtt(Ott ott) {
+    public OttDTO modifyOtt(Long ottId, Ott ott) {
         // 1. Ott 서비스 조회
-        Ott updatedOtt = Optional.ofNullable(ottRepository.findByOttId(ott.getOttId()))
+        Ott updatedOtt = Optional.ofNullable(ottRepository.findByOttId(ottId))
                 .orElseThrow(() -> new NoSuchOttException("등록되지 않은 Ott 플랫폼 서비스입니다.", NbbangException.NOT_FOUND_OTT));
 
         // 2. Ott 서비스 수정
