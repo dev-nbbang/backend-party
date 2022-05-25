@@ -2,8 +2,10 @@ package com.dev.nbbang.party.global.exception;
 
 public enum NbbangException {
     // 임의로 하나 만들어 놓음
-    NOT_FOUND_MEMBER ("BE001", "No Such a Member"),;
-
+    NO_CREATE_PARTY ("BE001", "Doesn't Create Party"),
+    NOT_FOUND_PARTY("BE002", "Not Found Party"),
+    NOT_FOUND_OTT("BE101", "Not Found Ott Platform"),
+    FAIL_TO_IMPORT_SERVER("BE203", "Failed To Import Server");
 
     private String code;
     private String message;
