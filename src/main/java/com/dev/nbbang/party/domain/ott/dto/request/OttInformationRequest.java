@@ -1,6 +1,7 @@
 package com.dev.nbbang.party.domain.ott.dto.request;
 
 import com.dev.nbbang.party.domain.ott.entity.Ott;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -12,6 +13,7 @@ public class OttInformationRequest {
     private Long ottPrice;
     private String ottImage;
 
+    @Builder
     public OttInformationRequest(String ottName, Integer ottHeadcount, Long ottPrice, String ottImage) {
         this.ottName = ottName;
         this.ottHeadcount = ottHeadcount;
