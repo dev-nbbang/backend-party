@@ -11,7 +11,8 @@ import com.dev.nbbang.party.domain.qna.exception.FailDeleteQnaException;
 import com.dev.nbbang.party.domain.qna.exception.NoCreateQnaException;
 import com.dev.nbbang.party.domain.qna.exception.NoSuchQnaException;
 import com.dev.nbbang.party.domain.qna.service.QnaService;
-import com.dev.nbbang.party.global.exception.ExceptionController;
+import com.dev.nbbang.party.global.config.WebConfig;
+import com.dev.nbbang.party.global.exception.NbbangExceptionHandler;
 import com.dev.nbbang.party.global.exception.NbbangException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,14 +20,18 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MockMvcBuilder;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDateTime;
@@ -58,7 +63,7 @@ class QnaControllerTest {
 
     @BeforeEach
     void setUp() {
-        this.mvc = MockMvcBuilders.standaloneSetup(new QnaController(this.qnaService, this.partyService)).setControllerAdvice(ExceptionController.class).build();
+        this.mvc = MockMvcBuilders.standaloneSetup(new QnaController(this.qnaService, this.partyService)).setControllerAdvice(NbbangExceptionHandler.class).build();
     }
 
     @Test
@@ -231,9 +236,9 @@ class QnaControllerTest {
     @DisplayName("Qna 컨트롤러 : 파티 답변 관리 성공")
     void 파티_답변_관리_성공() throws Exception {
         // given
-        String uri = "/qna/1/answer/0";
+        String uri = "/qna/1/answer/modify";
         String answerDetail = "답변 내용";
-        given(qnaService.manageAnswer(anyLong(), anyString(), anyInt())).willReturn(testAnswerQnaBuilder(answerDetail));
+        given(qnaService.manageAnswer(anyLong(), anyString(), any())).willReturn(testAnswerQnaBuilder(answerDetail));
 
         // when
         MockHttpServletResponse response = mvc.perform(put(uri)
@@ -249,6 +254,7 @@ class QnaControllerTest {
                 .andExpect(jsonPath("$.data.answerDetail").value("답변 내용"))
                 .andExpect(jsonPath("$.message").exists())
                 .andExpect(status().isCreated())
+                .andDo(print())
                 .andReturn().getResponse();
 
         // then
@@ -259,8 +265,8 @@ class QnaControllerTest {
     @DisplayName("Qna 컨트롤러 : 파티 답변 관리 실패")
     void 파티_답변_관리_실패() throws Exception {
         // given
-        String uri = "/qna/1/answer/0";
-        given(qnaService.manageAnswer(anyLong(), anyString(), anyInt())).willThrow(new NoSuchQnaException("문의내역 없음",NbbangException.NOT_FOUND_QNA));
+        String uri = "/qna/1/answer/delete";
+        given(qnaService.manageAnswer(anyLong(), anyString(), any())).willThrow(new NoSuchQnaException("문의내역 없음",NbbangException.NOT_FOUND_QNA));
 
         // when
         MockHttpServletResponse response = mvc.perform(put(uri)
@@ -385,4 +391,5 @@ class QnaControllerTest {
                 .answerDetail("답변 내용")
                 .build();
     }
+
 }

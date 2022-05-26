@@ -77,4 +77,20 @@ public class Party {
         this.period = period;
         this.partyNotice = partyNotice;
     }
+
+    // 일반 결제 시 파티 정보 수정
+    public void updatePartyDetails(String title, String partyDetail) {
+        this.title = title;
+        this.partyDetail = partyDetail;
+    }
+
+    // 파티 공지 수정
+    public void updatePartyNotice(String partyNotice) {
+        this.partyNotice = partyNotice;
+    }
+
+    public void updateOttAcc(String ottAccId, String ottAccPw) {
+        this.ottAccId = ottAccId;
+        this.ottAccPw = ottAccPw;
+    }
 }

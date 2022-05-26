@@ -1,15 +1,13 @@
 package com.dev.nbbang.party.domain.ott.exception;
 
-
 import com.dev.nbbang.party.global.exception.NbbangCommonException;
 import com.dev.nbbang.party.global.exception.NbbangException;
 import org.springframework.http.HttpStatus;
 
-public class NoSuchOttException extends NbbangCommonException {
+public class NoCreateOttException extends NbbangCommonException {
     private final String message;
     private final NbbangException nbbangException;
-
-    public NoSuchOttException(String message, NbbangException nbbangException) {
+    public NoCreateOttException(String message, NbbangException nbbangException) {
         this.message = message;
         this.nbbangException = nbbangException;
     }
@@ -29,4 +27,3 @@ public class NoSuchOttException extends NbbangCommonException {
         return message;
     }
 }
-

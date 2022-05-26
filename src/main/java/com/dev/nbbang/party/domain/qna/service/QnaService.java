@@ -1,6 +1,7 @@
 package com.dev.nbbang.party.domain.qna.service;
 
 import com.dev.nbbang.party.domain.qna.dto.QnaDTO;
+import com.dev.nbbang.party.domain.qna.entity.AnswerType;
 import com.dev.nbbang.party.domain.qna.entity.Qna;
 
 import java.util.List;
@@ -19,7 +20,7 @@ public interface QnaService {
     QnaDTO modifyQuestion(Long qnaId, String questionDetail);
 
     // 파티 답변 작성/수정/삭제
-    QnaDTO manageAnswer(Long qnaId, String answerDetail, Integer answerType);
+    QnaDTO manageAnswer(Long qnaId, String answerDetail, AnswerType answerType);
 
     // 미답변 질문 리스트 목록 가져오기
     List<QnaDTO> findAllUnansweredQuestion(Long partyId);

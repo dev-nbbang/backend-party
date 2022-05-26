@@ -1,18 +1,19 @@
-package com.dev.nbbang.party.domain.ott.exception;
+package com.dev.nbbang.party.domain.party.exception;
 
 
 import com.dev.nbbang.party.global.exception.NbbangCommonException;
 import com.dev.nbbang.party.global.exception.NbbangException;
 import org.springframework.http.HttpStatus;
 
-public class NoSuchOttException extends NbbangCommonException {
+public class InvalidLeaderGrantException extends NbbangCommonException {
     private final String message;
     private final NbbangException nbbangException;
 
-    public NoSuchOttException(String message, NbbangException nbbangException) {
+    public InvalidLeaderGrantException(String message, NbbangException nbbangException) {
         this.message = message;
         this.nbbangException = nbbangException;
     }
+
 
     @Override
     public String getErrorCode() {

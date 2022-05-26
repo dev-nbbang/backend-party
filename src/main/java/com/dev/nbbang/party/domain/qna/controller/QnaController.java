@@ -1,7 +1,6 @@
 package com.dev.nbbang.party.domain.qna.controller;
 
 import com.dev.nbbang.party.domain.party.dto.PartyDTO;
-import com.dev.nbbang.party.domain.party.exception.NoSuchPartyException;
 import com.dev.nbbang.party.domain.party.service.PartyService;
 import com.dev.nbbang.party.domain.qna.dto.QnaDTO;
 import com.dev.nbbang.party.domain.qna.dto.request.AnswerRequest;
@@ -10,11 +9,8 @@ import com.dev.nbbang.party.domain.qna.dto.request.QuestionModifyRequest;
 import com.dev.nbbang.party.domain.qna.dto.response.QnaInformationResponse;
 import com.dev.nbbang.party.domain.qna.dto.response.QuestionInformationResponse;
 import com.dev.nbbang.party.domain.qna.dto.response.QnaListResponse;
-import com.dev.nbbang.party.domain.qna.exception.FailDeleteQnaException;
-import com.dev.nbbang.party.domain.qna.exception.NoCreateQnaException;
-import com.dev.nbbang.party.domain.qna.exception.NoSuchQnaException;
+import com.dev.nbbang.party.domain.qna.entity.AnswerType;
 import com.dev.nbbang.party.domain.qna.service.QnaService;
-import com.dev.nbbang.party.global.common.CommonResponse;
 import com.dev.nbbang.party.global.common.CommonSuccessResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -85,14 +81,14 @@ public class QnaController {
     }
 
     @PutMapping(value = "/{qnaId}/answer/{answerType}")
-    public ResponseEntity<?> manageAnswer(@PathVariable(name = "qnaId") Long qnaId, @PathVariable(name = "answerType") Integer answerType, @RequestBody AnswerRequest request) {
+    public ResponseEntity<?> manageAnswer(@PathVariable(name = "qnaId") Long qnaId, @PathVariable(name = "answerType") AnswerType answerType, @RequestBody AnswerRequest request) {
         log.info("[Qna Controller - Manage Question] 문의 관리 (답변 등록, 삭제 , 수정)");
 
         // 파티장이 문의 내역 답변 관리
         QnaDTO manageAnswer = qnaService.manageAnswer(qnaId, request.getAnswerDetail(), answerType);
 
         String responseMessage = "답변 등록 및 수정에 성공했습니다.";
-        if (answerType == 2) responseMessage = "답변 삭제에 성공했습니다.";
+        if (answerType == AnswerType.DELETE) responseMessage = "답변 삭제에 성공했습니다.";
 
         return ResponseEntity.status(HttpStatus.CREATED).body(CommonSuccessResponse.response(true, QnaInformationResponse.create(manageAnswer), responseMessage));
     }

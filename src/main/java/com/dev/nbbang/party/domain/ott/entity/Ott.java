@@ -36,4 +36,12 @@ public class Ott {
         this.ottPrice = ottPrice;
         this.ottImage = ottImage;
     }
+
+    // Ott 플랫폼 정보 수정
+    public void updateOtt(String ottName, Integer ottHeadcount, Long ottPrice, String ottImage) {
+        this.ottName = ottName;
+        this.ottHeadcount = ottHeadcount;
+        this.ottPrice = ottPrice;
+        this.ottImage = ottImage;
+    }
 }
