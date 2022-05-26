@@ -27,4 +27,10 @@ public interface QnaRepository extends JpaRepository<Qna, Long> {
     Qna findByQnaId(Long qnaId);
 
     List<Qna> findAllByPartyAndQnaStatus(Party party, QnaStatus qnaStatus);
+
+    // 파티 해체시 파티아이디 질문 리스트 모두 삭제
+    void deleteByParty(Party party);
+
+    // 파티 해체시 파티 아이디 질문 리스트 삭제 검증
+    List<Qna> findAllByParty(Party party);
 }

@@ -5,8 +5,11 @@ import com.dev.nbbang.party.domain.party.entity.Party;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.domain.Slice;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @NoArgsConstructor
@@ -80,5 +83,28 @@ public class PartyDTO {
                 .period(party.getPeriod())
                 .partyNotice(party.getPartyNotice())
                 .build();
+    }
+
+    public static List<PartyDTO> createList(Slice<Party> partyList) {
+        List<PartyDTO> response = new ArrayList<>();
+        for (Party party : partyList) {
+            response.add(PartyDTO.builder()
+                    .partyId(party.getPartyId())
+                    .ott(party.getOtt())
+                    .leaderId(party.getLeaderId())
+                    .presentHeadcount(party.getPresentHeadcount())
+                    .maxHeadcount(party.getMaxHeadcount())
+                    .regYmd(party.getRegYmd())
+                    .ottAccId(party.getOttAccId())
+                    .ottAccPw(party.getOttAccPw())
+                    .matchingType(party.getMatchingType())
+                    .title(party.getTitle())
+                    .partyDetail(party.getPartyDetail())
+                    .price(party.getPrice())
+                    .period(party.getPeriod())
+                    .partyNotice(party.getPartyNotice())
+                    .build());
+        }
+        return response;
     }
 }
