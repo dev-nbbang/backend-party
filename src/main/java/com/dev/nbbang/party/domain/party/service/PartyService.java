@@ -21,10 +21,10 @@ public interface PartyService {
     PartyDTO updatePartyInformation(Long partyId, String title, String partyDetail, String leaderId);
 
     // 마감 안된 OTT 파티 리스트 조회
-    List<PartyDTO> findPartyList(Ott ott, int size);
+    List<PartyDTO> findPartyList(Ott ott, Long partyId, int size);
 
     // 마감 안된 OTT + 결제 유형 파티 리스트 조회
-    List<PartyDTO> findPartyListByMatchingType(Integer matchingType, Ott ott, int size);
+    List<PartyDTO> findPartyListByMatchingType(Integer matchingType, Ott ott, Long partyId, int size);
 
     // OTT 계정 중복 확인
     Boolean duplicateOttAcc(Ott ott, String ottAccId);

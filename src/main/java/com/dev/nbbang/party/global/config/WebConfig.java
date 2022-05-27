@@ -1,5 +1,6 @@
 package com.dev.nbbang.party.global.config;
 
+import com.dev.nbbang.party.domain.party.util.NoticeTypeConverter;
 import com.dev.nbbang.party.domain.qna.util.AnswerTypeConverter;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.format.FormatterRegistry;
@@ -11,5 +12,6 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addFormatters(FormatterRegistry registry) {
         registry.addConverter(new AnswerTypeConverter());
+        registry.addConverter(new NoticeTypeConverter());
     }
 }

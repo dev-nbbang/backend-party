@@ -101,6 +101,7 @@ public class PartyServiceImpl implements PartyService {
      * @return 수정된 파티 정보
      */
     @Override
+    @Transactional
     public PartyDTO updatePartyInformation(Long partyId, String title, String partyDetail, String leaderId) {
         // 1. 파티장 권한 확인 후 파티 찾기
         Party updatedParty = validationLeader(partyId, leaderId);
@@ -118,9 +119,9 @@ public class PartyServiceImpl implements PartyService {
      * @return 마감 안된 파티 리스트
      */
     @Override
-    public List<PartyDTO> findPartyList(Ott ott, int size) {
+    public List<PartyDTO> findPartyList(Ott ott, Long partyId, int size) {
         // 1. 마감 안된 파티 리스트 조회하기
-        Slice<Party> findPartyList = partyRepository.findPartyList(ott, ott.getOttHeadcount(), PageRequest.of(0, size));
+        Slice<Party> findPartyList = partyRepository.findPartyList(ott, ott.getOttHeadcount(),partyId, PageRequest.of(0, size));
 
         if(findPartyList.isEmpty())
             throw new NoSuchPartyException("모집중인 파티가 없습니다.", NbbangException.NOT_FOUND_PARTY);
@@ -136,9 +137,9 @@ public class PartyServiceImpl implements PartyService {
      * @return 마감 안된 파티 리스트
      */
     @Override
-    public List<PartyDTO> findPartyListByMatchingType(Integer matchingType, Ott ott, int size) {
+    public List<PartyDTO> findPartyListByMatchingType(Integer matchingType, Ott ott, Long partyId, int size) {
         // 1. 마감 안된 파티 리스트 조회하기
-        Slice<Party> findPartyList = partyRepository.findPartyList(matchingType, ott, ott.getOttHeadcount(), PageRequest.of(0, size));
+        Slice<Party> findPartyList = partyRepository.findPartyList(matchingType, ott, ott.getOttHeadcount(), partyId, PageRequest.of(0, size));
 
         if(findPartyList.isEmpty())
             throw new NoSuchPartyException("모집중인 파티가 없습니다.", NbbangException.NOT_FOUND_PARTY);
@@ -173,12 +174,14 @@ public class PartyServiceImpl implements PartyService {
      * @return 수정된 파티 정보
      */
     @Override
+    @Transactional
     public PartyDTO updatePartyNotice(NoticeType noticeType, Long partyId, String leaderId, String partyNotice) {
         // 1. 파티장 권한 확인 및 업데이트 할 파티 찾기
         Party updatedParty = validationLeader(partyId, leaderId);
 
         // 2. 파티 공지 업데이트
-        updatedParty.updatePartyNotice(partyNotice);
+        if(noticeType != NoticeType.DELETE)  updatedParty.updatePartyNotice(partyNotice);
+        else  updatedParty.deletePartyNotice();
 
         return PartyDTO.create(updatedParty);
     }
@@ -192,6 +195,7 @@ public class PartyServiceImpl implements PartyService {
      * @return 수정된 파티 정보
      */
     @Override
+    @Transactional
     public PartyDTO updateOttAcc(Long partyId, String leaderId, String ottAccId, String ottAccPw) {
         // 1. 파티장 권한 확인 및 파티 찾기
         Party updatedParty = validationLeader(partyId, leaderId);
