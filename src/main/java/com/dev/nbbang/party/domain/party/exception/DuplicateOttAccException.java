@@ -10,6 +10,7 @@ public class DuplicateOttAccException extends NbbangCommonException {
     private final NbbangException nbbangException;
 
     public DuplicateOttAccException(String message, NbbangException nbbangException) {
+        super(message);
         this.message = message;
         this.nbbangException = nbbangException;
     }

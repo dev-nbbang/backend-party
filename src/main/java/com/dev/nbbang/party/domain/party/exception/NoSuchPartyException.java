@@ -10,10 +10,10 @@ public class NoSuchPartyException extends NbbangCommonException {
     private final NbbangException nbbangException;
 
     public NoSuchPartyException(String message, NbbangException nbbangException) {
+        super(message);
         this.message = message;
         this.nbbangException = nbbangException;
     }
-
 
     @Override
     public String getErrorCode() {
@@ -29,5 +29,6 @@ public class NoSuchPartyException extends NbbangCommonException {
     public String getMessage() {
         return message;
     }
+
 }
 

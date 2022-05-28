@@ -10,6 +10,7 @@ public class NoSuchOttException extends NbbangCommonException {
     private final NbbangException nbbangException;
 
     public NoSuchOttException(String message, NbbangException nbbangException) {
+        super(message);
         this.message = message;
         this.nbbangException = nbbangException;
     }

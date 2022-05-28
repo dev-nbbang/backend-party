@@ -10,6 +10,7 @@ public class NoCreatePartyException extends NbbangCommonException {
     private final NbbangException nbbangException;
 
     public NoCreatePartyException(String message, NbbangException nbbangException) {
+        super(message);
         this.message = message;
         this.nbbangException = nbbangException;
     }

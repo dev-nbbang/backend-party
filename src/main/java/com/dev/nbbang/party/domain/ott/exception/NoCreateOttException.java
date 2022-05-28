@@ -8,6 +8,7 @@ public class NoCreateOttException extends NbbangCommonException {
     private final String message;
     private final NbbangException nbbangException;
     public NoCreateOttException(String message, NbbangException nbbangException) {
+        super(message);
         this.message = message;
         this.nbbangException = nbbangException;
     }

@@ -10,6 +10,7 @@ public class InvalidLeaderGrantException extends NbbangCommonException {
     private final NbbangException nbbangException;
 
     public InvalidLeaderGrantException(String message, NbbangException nbbangException) {
+        super(message);
         this.message = message;
         this.nbbangException = nbbangException;
     }

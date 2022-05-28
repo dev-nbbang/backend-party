@@ -10,6 +10,7 @@ public class FailDeletePartyException extends NbbangCommonException {
     private final NbbangException nbbangException;
 
     public FailDeletePartyException(String message, NbbangException nbbangException) {
+        super(message);
         this.message = message;
         this.nbbangException = nbbangException;
     }

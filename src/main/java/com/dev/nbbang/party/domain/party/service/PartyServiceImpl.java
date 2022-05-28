@@ -25,7 +25,7 @@ import java.util.Optional;
 public class PartyServiceImpl implements PartyService {
     private final PartyRepository partyRepository;
     private final QnaRepository qnaRepository;
-    private final OttRepository ottRepository;
+//    private final OttRepository ottRepository;
 
     /**
      * 파티장이 새로운 파티를 생성한다.

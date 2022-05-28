@@ -10,6 +10,7 @@ public class NoSuchQnaException extends NbbangCommonException {
     private final NbbangException nbbangException;
 
     public NoSuchQnaException(String message, NbbangException nbbangException) {
+        super(message);
         this.message = message;
         this.nbbangException = nbbangException;
     }

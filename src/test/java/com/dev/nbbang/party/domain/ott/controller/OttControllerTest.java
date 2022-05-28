@@ -254,6 +254,7 @@ class OttControllerTest {
                 .andExpect(status().isOk())
                 .andDo(print())
                 .andExpect(jsonPath("$.status").value(false))
+                .andExpect(jsonPath("$.message").value("조회 실패"))
                 .andReturn().getResponse();
 
         // then

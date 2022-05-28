@@ -10,6 +10,7 @@ public class FailDeleteQnaException extends NbbangCommonException {
     private final NbbangException nbbangException;
 
     public FailDeleteQnaException(String message, NbbangException nbbangException) {
+        super(message);
         this.message = message;
         this.nbbangException = nbbangException;
     }
