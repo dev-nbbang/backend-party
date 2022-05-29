@@ -236,7 +236,7 @@ class QnaControllerTest {
     @DisplayName("Qna 컨트롤러 : 파티 답변 관리 성공")
     void 파티_답변_관리_성공() throws Exception {
         // given
-        String uri = "/qna/1/answer/modify";
+        String uri = "/qna/1/answer/new";
         String answerDetail = "답변 내용";
         given(qnaService.manageAnswer(anyLong(), anyString(), any())).willReturn(testAnswerQnaBuilder(answerDetail));
 
@@ -245,6 +245,7 @@ class QnaControllerTest {
                 .header("X-Authorization-id", "leader")
                 .content(objectMapper.writeValueAsString(testAnswerRequest()))
                 .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
                 .andExpect(jsonPath("$.status").value(true))
                 .andExpect(jsonPath("$.data.qnaId").value(1))
                 .andExpect(jsonPath("$.data.partyId").value(1))
@@ -254,7 +255,6 @@ class QnaControllerTest {
                 .andExpect(jsonPath("$.data.answerDetail").value("답변 내용"))
                 .andExpect(jsonPath("$.message").exists())
                 .andExpect(status().isCreated())
-                .andDo(print())
                 .andReturn().getResponse();
 
         // then
@@ -273,9 +273,9 @@ class QnaControllerTest {
                 .header("X-Authorization-Id", "sender")
                 .content(objectMapper.writeValueAsString(testAnswerRequest()))
                 .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(false))
-                .andDo(print())
                 .andReturn().getResponse();
 
         // then

@@ -28,7 +28,7 @@ public class PartyServiceImpl implements PartyService {
 //    private final OttRepository ottRepository;
 
     /**
-     * 파티장이 새로운 파티를 생성한다.
+     * 파티장이 새로운 파티를 생성한다. (암호화)
      * @param party 새로운 파티 생성 데이터
      * @return PartyDTO 저장된 파티 데이터 정보
      */
@@ -187,7 +187,7 @@ public class PartyServiceImpl implements PartyService {
     }
 
     /**
-     * 파티장이 OTT 계정을 수정한다.
+     * 파티장이 OTT 계정을 수정한다. (비밀번호 암호화 추가 필요)
      * @param partyId 고유 파티 아이디
      * @param leaderId 파티장 아이디
      * @param ottAccId OTT 계정 아이디
