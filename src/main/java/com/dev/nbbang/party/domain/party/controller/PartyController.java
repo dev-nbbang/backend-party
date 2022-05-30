@@ -70,7 +70,7 @@ public class PartyController {
 
         PartyDTO updatedParty = partyService.updatePartyInformation(partyId, request.getTitle(), request.getPartyDetail(), memberId);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(PartyModifyResponse.create(updatedParty));
+        return ResponseEntity.status(HttpStatus.CREATED).body(CommonSuccessResponse.response(true, PartyModifyResponse.create(updatedParty), "파티 정보 수정에 성공했습니다."));
     }
 
     @GetMapping(value = "/{ottId}/list/all")

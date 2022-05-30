@@ -46,7 +46,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -120,8 +120,26 @@ class PartyControllerTest {
 
     @Test
     @DisplayName("파티 컨트롤러 : 파티 조회 성공")
-    void 파티_조회_성공() {
+    void 파티_조회_성공() throws Exception {
+        // given
+        String uri = "/party/1";
+        given(partyService.findPartyByPartyId(anyLong())).willReturn(testPartyBuilder(1L, "zayson"));
 
+        // when
+        MockHttpServletResponse response = mvc.perform(get(uri))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(true))
+                .andExpect(jsonPath("$.data.partyId").value(1))
+                .andExpect(jsonPath("$.data.ott.ottId").value(1))
+                .andExpect(jsonPath("$.data.ott.ottName").value("test"))
+                .andExpect(jsonPath("$.data.leaderId").value("leader"))
+                .andExpect(jsonPath("$.data.ottAccId").value("zayson"))
+                .andExpect(jsonPath("$.message").exists())
+                .andReturn().getResponse();
+
+        // then
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
     }
 
     @Test
@@ -145,8 +163,17 @@ class PartyControllerTest {
 
     @Test
     @DisplayName("파티 컨트롤러 : 파티 해체 성공")
-    void 파티_해체_성공() {
+    void 파티_해체_성공() throws Exception {
+        // given
+        String uri = "/party/1";
+        doNothing().when(partyService).deleteParty(anyLong(), anyString());
 
+        // when
+        MockHttpServletResponse response = mvc.perform(delete(uri)
+                .header("X-Authorization-Id", "leader"))
+                .andDo(print())
+                .andExpect(status().isNoContent())
+                .andReturn().getResponse();
     }
 
     @Test
@@ -171,8 +198,26 @@ class PartyControllerTest {
 
     @Test
     @DisplayName("파티 컨트롤러 : 일반 결제 파티 정보 수정 성공")
-    void 일반결제_파티_정보_수정_성공() {
+    void 일반결제_파티_정보_수정_성공() throws Exception {
+        // given
+        String uri = "/party/1";
+        given(partyService.updatePartyInformation(anyLong(), anyString(), anyString(), anyString())).willReturn(testPartyBuilder(1L, "zayson"));
 
+        // when
+        MockHttpServletResponse response = mvc.perform(put(uri)
+                .header("X-Authorization-Id", "leader")
+                .content(objectMapper.writeValueAsString(testPartyModifyRequest()))
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value(true))
+                .andExpect(jsonPath("$.data.title").value("title"))
+                .andExpect(jsonPath("$.data.partyDetail").value("partyDetail"))
+                .andExpect(jsonPath("$.message").exists())
+                .andDo(print())
+                .andExpect(status().isCreated())
+                .andReturn().getResponse();
+
+        // then
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.CREATED.value());
     }
 
     @Test
@@ -200,7 +245,29 @@ class PartyControllerTest {
 
     @Test
     @DisplayName("파티 컨트롤러 : 파티 리스트 조회 성공(필터링 X)")
-    void 파티_리스트_조회_성공_필터링X() {
+    void 파티_리스트_조회_성공_필터링X() throws Exception {
+        // given
+        String uri = "/party/1/list/all";
+        given(ottService.findOtt(anyLong())).willReturn(testOtt());
+        given(partyService.findPartyList(any(), anyLong(), anyInt())).willReturn(testPartyListBuilder());
+
+        // when
+        MockHttpServletResponse response = mvc.perform(get(uri)
+                .header("X-Authorization-Id", "leader")
+                .param("partyId", "10000")
+                .param("size", "2"))
+                .andExpect(jsonPath("$.status").value(true))
+                .andExpect(jsonPath("$.data.[0].ott.ottId").value(1))
+                .andExpect(jsonPath("$.data.[1].ott.ottId").value(1))
+                .andExpect(jsonPath("$.data.[0].partyId").value(1))
+                .andExpect(jsonPath("$.data.[1].partyId").value(2))
+                .andExpect(jsonPath("$.message").exists())
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn().getResponse();
+
+        // then
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
 
     }
 
@@ -230,8 +297,26 @@ class PartyControllerTest {
 
     @Test
     @DisplayName("파티 컨트롤러 : 파티 리스트 조회 성공(필터링 O)")
-    void 파티_리스트_조회_성공_필터링O() {
+    void 파티_리스트_조회_성공_필터링O() throws Exception {
+        // given
+        String uri = "/party/1/list/1";
+        given(ottService.findOtt(anyLong())).willReturn(testOtt());
+        given(partyService.findPartyListByMatchingType(anyInt(), any(), anyLong(), anyInt())).willReturn(testPartyListBuilder());
 
+        // when
+        MockHttpServletResponse response = mvc.perform(get(uri)
+                .header("X-Authorization-Id", "leader")
+                .param("partyId", "1000")
+                .param("size", "2"))
+                .andExpect(jsonPath("$.status").value(true))
+                .andExpect(jsonPath("$.data.[0].ott.ottId").value(1))
+                .andExpect(jsonPath("$.data.[1].ott.ottId").value(1))
+                .andExpect(jsonPath("$.data.[0].partyId").value(1))
+                .andExpect(jsonPath("$.data.[1].partyId").value(2))
+                .andExpect(jsonPath("$.message").exists())
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn().getResponse();
     }
 
     @Test
@@ -260,8 +345,26 @@ class PartyControllerTest {
 
     @Test
     @DisplayName("파티 컨트롤러 : OTT 계정 중복 등록 검증 성공")
-    void OTT_계정_중복_등록_검증_성공() {
+    void OTT_계정_중복_등록_검증_성공() throws Exception {
+        // given
+        String uri = "/party/ott-acc/validation";
+        given(ottService.findOtt(anyLong())).willReturn(testOtt());
+        given(partyService.duplicateOttAcc(any(), anyString())).willReturn(Boolean.TRUE);
 
+        // then
+        MockHttpServletResponse response = mvc.perform(get(uri)
+                .header("X-authorization-Id", "leader")
+                .content(objectMapper.writeValueAsString(testOttAccRequest()))
+                .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(true))
+                .andExpect(jsonPath("$.data.validOttAcc").value(true))
+                .andExpect(jsonPath("$.message").exists())
+                .andReturn().getResponse();
+
+        // then
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
     }
 
     @Test
@@ -289,8 +392,26 @@ class PartyControllerTest {
 
     @Test
     @DisplayName("파티 컨트롤러 : 파티 공지 관리 성공")
-    void 파티_공지_관리_성공() {
+    void 파티_공지_관리_성공() throws Exception {
+        // given
+        String uri = "/party/1/notice/modify";
+        given(partyService.updatePartyNotice(any(), anyLong(), anyString(), anyString())).willReturn(testPartyBuilder(1L, "zayson"));
 
+        // when
+        MockHttpServletResponse response = mvc.perform(put(uri)
+                .header("X-Authorization-Id", "leader")
+                .content(objectMapper.writeValueAsString(testNoticeRequest()))
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value(true))
+                .andExpect(jsonPath("$.data.partyId").value(1))
+                .andExpect(jsonPath("$.data.partyNotice").value("partyNotice"))
+                .andExpect(jsonPath("$.message").exists())
+                .andDo(print())
+                .andExpect(status().isCreated())
+                .andReturn().getResponse();
+
+        // then
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.CREATED.value());
     }
 
     @Test
@@ -318,8 +439,23 @@ class PartyControllerTest {
 
     @Test
     @DisplayName("파티 컨트롤러 : OTT 계정 조회 성공")
-    void OTT_계정_조회_성공() {
+    void OTT_계정_조회_성공() throws Exception {
+        // given
+        String uri = "/party/1/ott-acc";
+        given(partyService.findPartyByPartyId(anyLong())).willReturn(testPartyBuilder(1L, "zayson"));
 
+        // then
+        MockHttpServletResponse response = mvc.perform(get(uri)
+                .header("X-Authorization-Id", "leader"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(true))
+                .andExpect(jsonPath("$.data.ottAccId").value("zayson"))
+                .andExpect(jsonPath("$.data.ottAccPw").value("1234"))
+                .andReturn().getResponse();
+
+        // then
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
     }
 
     @Test
@@ -345,8 +481,27 @@ class PartyControllerTest {
 
     @Test
     @DisplayName("파티 컨트롤러 : OTT 계정 수정 성공")
-    void OTT_계정_수정_성공() {
+    void OTT_계정_수정_성공() throws Exception {
+        // given
+        String uri = "/party/1/ott-acc";
+        given(partyService.updateOttAcc(anyLong(), anyString(), anyString(), anyString()))
+                .willReturn(testPartyBuilder(1L, "update Id"));
 
+        // when
+        MockHttpServletResponse response = mvc.perform(put(uri)
+                .header("X-Authorization-Id", "leader")
+                .content(objectMapper.writeValueAsString(testOttAccInformation()))
+                .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value(true))
+                .andExpect(jsonPath("$.data.ottAccId").value("update Id"))
+                .andExpect(jsonPath("$.data.ottAccPw").value("1234"))
+                .andExpect(jsonPath("$.message").exists())
+                .andReturn().getResponse();
+
+        // then
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.CREATED.value());
     }
 
     @Test
@@ -406,6 +561,7 @@ class PartyControllerTest {
                 .title("title")
                 .partyDetail("partyDetail")
                 .price(3000L)
+                .partyNotice("partyNotice")
                 .period(30).build();
     }
 
