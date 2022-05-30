@@ -99,4 +99,10 @@ public class Party {
         this.ottAccId = ottAccId;
         this.ottAccPw = ottAccPw;
     }
+
+    // 파티 현재 인원 수정
+    public void updatePresentHeadcount() {
+        if(this.presentHeadcount < 1) return;
+        this.presentHeadcount -= 1;
+    }
 }

@@ -24,8 +24,10 @@ import java.util.Optional;
 public class QnaServiceImpl implements QnaService {
     private final QnaRepository qnaRepository;
     private final PartyRepository partyRepository;
+
     /**
      * 질문자가 파티장에게 문의사항을 남긴다.
+     *
      * @param question 질문자가 질문한 내용을 담은 데이터
      * @return 문의한 질문을 담은 데이터
      */
@@ -41,7 +43,8 @@ public class QnaServiceImpl implements QnaService {
 
     /**
      * 질문자가 해당 파티에 남긴 모든 문의내역을 조회한다.
-     * @param partyId 조회할 파티의 고유 아이디
+     *
+     * @param partyId  조회할 파티의 고유 아이디
      * @param senderId 질문자 아이디
      * @return 해당 파티에 남긴 모든 문의내역 리스트
      */
@@ -54,13 +57,14 @@ public class QnaServiceImpl implements QnaService {
         // 2. 질문자 아이디와 파티를 이용해 질문자가 문의한 모든 문의사항을 조회한다.
         List<Qna> findQnaList = qnaRepository.findAllByPartyAndQnaSender(findParty, senderId);
 
-        if(findQnaList.isEmpty()) throw new NoSuchQnaException("등록된 문의 내역이 없습니다.", NbbangException.NOT_FOUND_QNA);
+        if (findQnaList.isEmpty()) throw new NoSuchQnaException("등록된 문의 내역이 없습니다.", NbbangException.NOT_FOUND_QNA);
 
         return QnaDTO.createList(findQnaList);
     }
 
     /**
      * 질문자가 문의한 내역을 삭제한다.
+     *
      * @param qnaId 삭제할 문의 아이디
      */
     @Override
@@ -81,7 +85,8 @@ public class QnaServiceImpl implements QnaService {
 
     /**
      * 질문자가 문의내역을 수정한다.
-     * @param qnaId 수정할 문의내역 아이디
+     *
+     * @param qnaId          수정할 문의내역 아이디
      * @param questionDetail 문의 내용
      * @return 수정한 문의내역을 담은 데이터
      */
@@ -100,9 +105,10 @@ public class QnaServiceImpl implements QnaService {
 
     /**
      * 파티장이 문의내역에 대해 답변을 관리한다.
-     * @param qnaId 문의내역 아이디
+     *
+     * @param qnaId        문의내역 아이디
      * @param answerDetail 문의 답변 내용
-     * @param answerType 0 : 해당 문의에 대한 답변, 1 : 해당 문의에 대한 답변 수정, 2 : 해당 문의에 대한 답변 삭제(빈칸으로 수정)
+     * @param answerType   0 : 해당 문의에 대한 답변, 1 : 해당 문의에 대한 답변 수정, 2 : 해당 문의에 대한 답변 삭제(빈칸으로 수정)
      * @return 답변 이후의 문의내역 데이터
      */
     @Override
@@ -113,11 +119,10 @@ public class QnaServiceImpl implements QnaService {
                 .orElseThrow(() -> new NoSuchQnaException("등록되지 않았거나 삭제된 질문자에 의해 삭제된 문의내역입니다.", NbbangException.NOT_FOUND_QNA));
 
         // 2. 문의에 대한 답변에 따라 다르게
-        if(answerType != AnswerType.DELETE) {
+        if (answerType != AnswerType.DELETE) {
             // 문의에 대한 새로운 답변 ( 1 -> 2)
             managedQna.answerQuestion(answerDetail);
-        }
-        else {
+        } else {
             // 기존 답변 빈칸으로 수정 ( 2 -> 1)
             managedQna.deleteAnswer();
         }
@@ -127,6 +132,7 @@ public class QnaServiceImpl implements QnaService {
 
     /**
      * 해당 파티의 미답변 질문 리스트를 가져온다.
+     *
      * @param partyId 파티 고유 아이디
      * @return 미답변 질문 리스트 데이터
      */
@@ -139,7 +145,8 @@ public class QnaServiceImpl implements QnaService {
         // 2. 해당 파티의 미답변 질문 리스트를 가져온다.
         List<Qna> unansweredQuestions = qnaRepository.findAllByPartyAndQnaStatus(findParty, QnaStatus.Q);
 
-        if(unansweredQuestions.isEmpty()) throw new NoSuchQnaException("답변하지 않은 문의 내역이 없습니다.", NbbangException.NOT_FOUND_QNA);
+        if (unansweredQuestions.isEmpty())
+            throw new NoSuchQnaException("답변하지 않은 문의 내역이 없습니다.", NbbangException.NOT_FOUND_QNA);
 
         return QnaDTO.createList(unansweredQuestions);
     }

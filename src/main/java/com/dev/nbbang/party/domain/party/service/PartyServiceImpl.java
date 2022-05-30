@@ -4,8 +4,10 @@ import com.dev.nbbang.party.domain.ott.entity.Ott;
 import com.dev.nbbang.party.domain.ott.repository.OttRepository;
 import com.dev.nbbang.party.domain.party.dto.PartyDTO;
 import com.dev.nbbang.party.domain.party.entity.NoticeType;
+import com.dev.nbbang.party.domain.party.entity.Participant;
 import com.dev.nbbang.party.domain.party.entity.Party;
 import com.dev.nbbang.party.domain.party.exception.*;
+import com.dev.nbbang.party.domain.party.repository.ParticipantRepository;
 import com.dev.nbbang.party.domain.party.repository.PartyRepository;
 import com.dev.nbbang.party.domain.qna.entity.Qna;
 import com.dev.nbbang.party.domain.qna.exception.FailDeleteQnaException;
@@ -17,6 +19,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,8 +28,7 @@ import java.util.Optional;
 public class PartyServiceImpl implements PartyService {
     private final PartyRepository partyRepository;
     private final QnaRepository qnaRepository;
-//    private final OttRepository ottRepository;
-
+    private final ParticipantRepository participantRepository;
     /**
      * 파티장이 새로운 파티를 생성한다. (암호화)
      * @param party 새로운 파티 생성 데이터
@@ -40,6 +42,15 @@ public class PartyServiceImpl implements PartyService {
         // 1. 파티 생성
         Party createdParty = Optional.of(partyRepository.save(party)).orElseThrow(() -> new NoCreatePartyException("파티 생성에 실패했습니다.", NbbangException.NO_CREATE_PARTY));
 
+        // 2. 파티원 테이블에 파티장 정보 입력하기
+        Participant savedParticipant = Optional.of(participantRepository.save(Participant.builder()
+                .party(createdParty)
+                .participantId(createdParty.getLeaderId())
+                .participantYmd(LocalDateTime.now())
+                .ottId(createdParty.getOtt().getOttId()).build()))
+                .orElseThrow(() -> new NoCreateParticipantException("파티원 정보 저장에 실패했습니다.", NbbangException.NO_CREATE_PARTICIPANT));
+
+        // 3. 양방향이 되는 경우 연관관계 편의 메소드와 리턴할 때 같이 넣어주기
         return PartyDTO.create(createdParty);
     }
 
@@ -72,6 +83,12 @@ public class PartyServiceImpl implements PartyService {
         // 4. 파티원 환불 처리
 
         // 5. 파티원 테이블 삭제
+        participantRepository.deleteByParty(findParty);
+
+        // 5-1. 파티원 삭제 확인
+        List<Participant> findParticipants = participantRepository.findAllByParty(findParty);
+        if(!findParticipants.isEmpty())
+            throw new FailDeleteParticipantException("해당 파티에 참가한 파티원 탈퇴에 실패했습니다.", NbbangException.FAIL_TO_DELETE_PARTICIPANT);
 
         // 6. QNA 테이블 삭제
         qnaRepository.deleteByParty(findParty);
@@ -143,7 +160,6 @@ public class PartyServiceImpl implements PartyService {
 
         if(findPartyList.isEmpty())
             throw new NoSuchPartyException("모집중인 파티가 없습니다.", NbbangException.NOT_FOUND_PARTY);
-
         return PartyDTO.createList(findPartyList);
     }
 

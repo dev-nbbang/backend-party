@@ -6,10 +6,12 @@ import com.dev.nbbang.party.domain.party.dto.PartyDTO;
 import com.dev.nbbang.party.domain.party.dto.request.*;
 import com.dev.nbbang.party.domain.party.dto.response.*;
 import com.dev.nbbang.party.domain.party.entity.NoticeType;
+import com.dev.nbbang.party.domain.party.service.ParticipantService;
 import com.dev.nbbang.party.domain.party.service.PartyService;
 import com.dev.nbbang.party.global.common.CommonSuccessResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +26,7 @@ import java.util.List;
 public class PartyController {
     private final PartyService partyService;
     private final OttService ottService;
+    private final ParticipantService participantService;
 
     @PostMapping(value = "/new")
     public ResponseEntity<?> createParty(@RequestBody PartyCreateRequest request, HttpServletRequest servletRequest) {
@@ -152,5 +155,38 @@ public class PartyController {
         PartyDTO updatedParty = partyService.updateOttAcc(partyId, memberId, request.getOttAccId(), request.getOttAccPw());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(CommonSuccessResponse.response(true, PartyOttAccResponse.create(updatedParty), "OTT 서비스 계정 정보 수정에 성공했습니다."));
+    }
+
+    @DeleteMapping(value = "/{partyId}/participant")
+    public ResponseEntity<?> leaveParty(@PathVariable(name = "partyId") Long partyId, HttpServletRequest servletRequest) {
+        log.info("[Party Controller - Leave Party] 파티원이 파티를 탈퇴");
+
+        // 회원 아이디 파싱
+        String memberId = servletRequest.getHeader("X-Authorization-Id");
+
+        // 파티탈퇴 시작
+        participantService.outFromParty(partyId, memberId);
+
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @GetMapping(value = "/{ottId}/nickname")
+    public ResponseEntity<?> validJoinParty(@PathVariable(name = "ottId") Long ottId, @RequestBody ParticipantValidRequest request) {
+        log.info("[Party controller - Valid Join Party] 파티에 가입되어있는 회원 인지 검증");
+
+        // 가입 검증
+        Boolean validJoinParty = participantService.validParticipateParty(ottId, request.getParticipantId());
+
+        return ResponseEntity.ok(CommonSuccessResponse.response(true, ParticipantValidResponse.create(request.getParticipantId(), validJoinParty), "파티 초대가 가능한 회원입니다."));
+    }
+
+    @GetMapping(value = "{ottId}/matching/week")
+    public ResponseEntity<?> countMatchingParticipant(@PathVariable(name = "ottId") Long ottId) {
+        log.info("[Party Controller - Count Matching Participant]일주일간 매칭된 회원 수");
+
+        // 인원수 구하기
+        Integer matchingCount = participantService.matchingCountForWeek(ottId);
+
+        return ResponseEntity.ok(CommonSuccessResponse.response(true, MatchingCountResponse.create(ottId, matchingCount), "매칭 인원수 조회에 성공했습니다."));
     }
 }
