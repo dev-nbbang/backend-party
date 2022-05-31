@@ -3,10 +3,12 @@ package com.dev.nbbang.party.domain.party.service;
 import com.dev.nbbang.party.domain.ott.entity.Ott;
 import com.dev.nbbang.party.domain.party.dto.PartyDTO;
 import com.dev.nbbang.party.domain.party.entity.NoticeType;
+import com.dev.nbbang.party.domain.party.entity.Participant;
 import com.dev.nbbang.party.domain.party.entity.Party;
 import com.dev.nbbang.party.domain.party.exception.DuplicateOttAccException;
 import com.dev.nbbang.party.domain.party.exception.NoCreatePartyException;
 import com.dev.nbbang.party.domain.party.exception.NoSuchPartyException;
+import com.dev.nbbang.party.domain.party.repository.ParticipantRepository;
 import com.dev.nbbang.party.domain.party.repository.PartyRepository;
 import com.dev.nbbang.party.domain.qna.repository.QnaRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -38,6 +40,9 @@ class PartyServiceTest {
     @Mock
     private QnaRepository qnaRepository;
 
+    @Mock
+    private ParticipantRepository participantRepository;
+
     @InjectMocks
     private PartyServiceImpl partyService;
 
@@ -46,6 +51,7 @@ class PartyServiceTest {
     void 파티_생성_성공() {
         // given
         given(partyRepository.save(any())).willReturn(testPartyBuilder(1L, "zayson"));
+        given(participantRepository.save(any())).willReturn(testParticipantBuilder());
 
         // when
         PartyDTO savedParty = partyService.createParty(testPartyBuilder(1L, "zayson"));
@@ -105,6 +111,7 @@ class PartyServiceTest {
         // then
         verify(qnaRepository, times(1)).deleteByParty(testPartyBuilder(1L, "zayson"));
         verify(partyRepository, times(1)).deleteByPartyId(1L);
+        verify(participantRepository, times(1)).deleteByParty(testPartyBuilder(1L, "zayson"));
 
     }
 
@@ -317,6 +324,15 @@ class PartyServiceTest {
                 .title("title")
                 .price(3000L)
                 .period(30).build();
+    }
+
+    private static Participant testParticipantBuilder() {
+        return Participant.builder()
+                .party(testPartyBuilder(1L, "zayson"))
+                .participantId("maeng")
+                .participantYmd(LocalDateTime.now())
+                .ottId(1L)
+                .build();
     }
 
     private static Slice<Party> testPartyListBuilder() {
