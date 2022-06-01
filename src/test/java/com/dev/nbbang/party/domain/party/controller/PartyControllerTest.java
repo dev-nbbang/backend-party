@@ -5,11 +5,11 @@ import com.dev.nbbang.party.domain.ott.entity.Ott;
 import com.dev.nbbang.party.domain.ott.service.OttService;
 import com.dev.nbbang.party.domain.party.dto.PartyDTO;
 import com.dev.nbbang.party.domain.party.dto.request.*;
+import com.dev.nbbang.party.domain.party.dto.response.ParticipantValidResponse;
+import com.dev.nbbang.party.domain.party.entity.Participant;
 import com.dev.nbbang.party.domain.party.entity.Party;
-import com.dev.nbbang.party.domain.party.exception.DuplicateOttAccException;
-import com.dev.nbbang.party.domain.party.exception.FailDeletePartyException;
-import com.dev.nbbang.party.domain.party.exception.NoCreatePartyException;
-import com.dev.nbbang.party.domain.party.exception.NoSuchPartyException;
+import com.dev.nbbang.party.domain.party.exception.*;
+import com.dev.nbbang.party.domain.party.service.ParticipantService;
 import com.dev.nbbang.party.domain.party.service.PartyService;
 import com.dev.nbbang.party.domain.party.service.PartyServiceImpl;
 import com.dev.nbbang.party.global.config.WebConfig;
@@ -35,8 +35,10 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import javax.transaction.TransactionScoped;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,6 +62,9 @@ class PartyControllerTest {
 
     @MockBean
     private OttService ottService;
+
+    @MockBean
+    private ParticipantService participantService;
 
     @Autowired
     private MockMvc mvc;
@@ -527,6 +532,110 @@ class PartyControllerTest {
         assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
     }
 
+    @Test
+    @DisplayName("파티 컨트롤러 : 파티원이 파티 탈퇴 성공")
+    void 파티원이_자의로_파티탈퇴_성공() throws Exception {
+        // given
+        String uri = "/party/1/participant";
+        doNothing().when(participantService).outFromParty(anyLong(), anyString());
+
+        // when
+        MockHttpServletResponse response = mvc.perform(delete(uri)
+                .header("X-Authorization-Id", "participant"))
+                .andDo(print())
+                .andExpect(status().isNoContent())
+                .andReturn().getResponse();
+
+        // then
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.NO_CONTENT.value());
+    }
+
+    @Test
+    @DisplayName("파티 컨트롤러 : 파티원이 파티 탈퇴 실패")
+    void 파티원이_파티_탈퇴_실패() throws Exception {
+        // given
+        String uri = "/party/1/participant";
+        doThrow(new NoSuchParticipantException("탈퇴 실패", NbbangException.NOT_FOUND_PARTICIPANT)).when(participantService).outFromParty(anyLong(), anyString());
+
+        // when
+        MockHttpServletResponse response = mvc.perform(delete(uri)
+                .header("X-Authorization-Id", "participant"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(false))
+                .andExpect(jsonPath("$.message").exists())
+                .andReturn().getResponse();
+
+        // then
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+    }
+
+    @Test
+    @DisplayName("파티 컨트롤러 : 파티 가입 여부 조회 성공")
+    void 파티_가입_여부_조회_성공() throws Exception {
+        // given
+        String uri = "/party/1/nickname";
+        given(participantService.validParticipateParty(anyLong(), anyString())).willReturn(Boolean.TRUE);
+
+        // when
+        MockHttpServletResponse response = mvc.perform(get(uri)
+                .header("X-Authorization-Id", "particpant")
+                .content(objectMapper.writeValueAsString(testParticipantValidRequest()))
+                .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(true))
+                .andExpect(jsonPath("$.data.validJoinParty").value(true))
+                .andExpect(jsonPath("$.message").exists())
+                .andReturn().getResponse();
+
+        // then
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+    }
+
+    @Test
+    @DisplayName("파티 컨트롤러 : 파티 가입 여부 조회 실패")
+    void 파티_가입_여부_조회_실패() throws Exception {
+        // given
+        String uri = "/party/1/nickname";
+        given(participantService.validParticipateParty(anyLong(), anyString())).willThrow(new AlreadyJoinPartyException("파티 가입", NbbangException.ALREADY_JOIN_PARTY));
+
+        // when
+        MockHttpServletResponse response = mvc.perform(get(uri)
+                .header("X-Authorization-Id", "particpant")
+                .content(objectMapper.writeValueAsString(testParticipantValidRequest()))
+                .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(false))
+                .andExpect(jsonPath("$.message").exists())
+                .andReturn().getResponse();
+
+        // then
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+    }
+
+    @Test
+    @DisplayName("파티 컨트롤러 : 일주일 매칭 인원수 조회 성공")
+    void 일주일_매칭_인원수_조회_성공() throws Exception {
+        // given
+        String uri = "/party/1/matching/week";
+        given(participantService.matchingCountForWeek(anyLong())).willReturn(3);
+
+        // when
+        MockHttpServletResponse response = mvc.perform(get(uri)
+                .header("X-Authorization-Id", "participant"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(true))
+                .andExpect(jsonPath("$.data.matchingCount").value(3))
+                .andExpect(jsonPath("$.message").exists())
+                .andReturn().getResponse();
+
+        // then
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+    }
+
     private static Ott testOttBuilder() {
         return Ott.builder()
                 .ottId(1L)
@@ -611,6 +720,12 @@ class PartyControllerTest {
     private static PartyNoticeRequest testNoticeRequest() {
         return PartyNoticeRequest.builder()
                 .partyNotice("update Notice")
+                .build();
+    }
+
+    private static ParticipantValidRequest testParticipantValidRequest() {
+        return ParticipantValidRequest.builder()
+                .participantId("participant")
                 .build();
     }
 }
