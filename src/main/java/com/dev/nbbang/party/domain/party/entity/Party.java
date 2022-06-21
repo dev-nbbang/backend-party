@@ -55,13 +55,13 @@ public class Party {
     private Long price;
 
     @Column(name = "PERIOD")
-    private int period;
+    private Integer period;
 
     @Column(name = "PARTY_NOTICE")
     private String partyNotice;
 
     @Builder
-    public Party(Long partyId, Ott ott, String leaderId, Integer presentHeadcount, Integer maxHeadcount, LocalDateTime regYmd, String ottAccId, String ottAccPw, Integer matchingType, String title, String partyDetail, Long price, int period, String partyNotice) {
+    public Party(Long partyId, Ott ott, String leaderId, Integer presentHeadcount, Integer maxHeadcount, LocalDateTime regYmd, String ottAccId, String ottAccPw, Integer matchingType, String title, String partyDetail, Long price, Integer period, String partyNotice) {
         this.partyId = partyId;
         this.ott = ott;
         this.leaderId = leaderId;
@@ -76,5 +76,33 @@ public class Party {
         this.price = price;
         this.period = period;
         this.partyNotice = partyNotice;
+    }
+
+    // 일반 결제 시 파티 정보 수정
+    public void updatePartyDetails(String title, String partyDetail) {
+        this.title = title;
+        this.partyDetail = partyDetail;
+    }
+
+    // 파티 공지 작성, 수정
+    public void updatePartyNotice(String partyNotice) {
+        this.partyNotice = partyNotice;
+    }
+
+    // 파티 공지 삭제 -> 공백으로 변경
+    public void deletePartyNotice() {
+        this.partyNotice = "";
+    }
+
+    // OTT 계정 조회
+    public void updateOttAcc(String ottAccId, String ottAccPw) {
+        this.ottAccId = ottAccId;
+        this.ottAccPw = ottAccPw;
+    }
+
+    // 파티 현재 인원 수정
+    public void updatePresentHeadcount() {
+        if(this.presentHeadcount < 1) return;
+        this.presentHeadcount -= 1;
     }
 }

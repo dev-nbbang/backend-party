@@ -1,6 +1,5 @@
 package com.dev.nbbang.party.global.common;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

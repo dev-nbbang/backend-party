@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.sql.Date;
 import java.sql.Timestamp;
 
 @Entity
@@ -24,7 +25,7 @@ public class PaymentLog {
     @Column(name = "MEMBER_ID", nullable = false)
     private String memberId;
     @Column(name = "PARTY_ID", nullable = false)
-    private int partyId;
+    private Long partyId;
     @Column(name = "PAYMENT_DETAIL")
     private String paymentDetail;
     @Column(name = "PAYMENT_YMD", nullable = false)

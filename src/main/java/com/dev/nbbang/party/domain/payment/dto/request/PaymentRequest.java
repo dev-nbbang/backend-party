@@ -9,7 +9,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class NormalPaymentRequest {
-    private String imp_uid;
+public class PaymentRequest {
+    private String customer_uid;
     private String merchant_uid;
+    private int price;
+    private Integer couponId;
+    private Integer couponType;
+    private Long point;
 }

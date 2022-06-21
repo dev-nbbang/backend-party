@@ -9,8 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class BillingPaymentRequest {
-    private String customer_uid;
+public class ImportPaymentRequest {
+    private String imp_uid;
     private String merchant_uid;
-    private int price;
 }

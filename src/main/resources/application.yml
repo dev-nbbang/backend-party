@@ -15,7 +15,7 @@ spring:
         dialect: org.hibernate.dialect.MySQL5InnoDBDialect
         storage_engine: innodb
   datasource:
-    driver-class-name: com.mysql.jdbc.Driver
+    driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://129.154.222.27:3306/nbbang_party?useSSL=false&useUnicode=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
     username: root
     password: nbbang-dev!@#
