@@ -30,3 +30,8 @@ logging:
         type:
           descriptor:
             sql: trace
+
+## kakfa
+kafka:
+  host: 129.154.222.27
+  port: 9092
