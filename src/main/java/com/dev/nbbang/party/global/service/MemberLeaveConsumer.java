@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @Slf4j
@@ -21,6 +22,7 @@ public class MemberLeaveConsumer {
     private final PaymentLogRepository paymentLogRepository;
     private final ObjectMapper objectMapper;
 
+    @Transactional
     @KafkaListener(topics = "leave-member", groupId = "party-group-id")
     public void receiverLeaveMemberMessage(String message, Acknowledgment ack) throws JsonProcessingException {
         log.info("[Leave Member Message Receive] : 회원 탈퇴 이벤트 수신 (파티 서비스)");
