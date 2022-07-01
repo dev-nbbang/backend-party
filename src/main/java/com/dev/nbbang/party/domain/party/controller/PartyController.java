@@ -1,6 +1,7 @@
 package com.dev.nbbang.party.domain.party.controller;
 
 import com.dev.nbbang.party.domain.ott.dto.OttDTO;
+import com.dev.nbbang.party.domain.ott.entity.Ott;
 import com.dev.nbbang.party.domain.ott.service.OttService;
 import com.dev.nbbang.party.domain.party.dto.PartyDTO;
 import com.dev.nbbang.party.domain.party.dto.request.*;
@@ -8,11 +9,14 @@ import com.dev.nbbang.party.domain.party.dto.response.*;
 import com.dev.nbbang.party.domain.party.entity.NoticeType;
 import com.dev.nbbang.party.domain.party.service.ParticipantService;
 import com.dev.nbbang.party.domain.party.service.PartyService;
+import com.dev.nbbang.party.global.common.CommonResponse;
 import com.dev.nbbang.party.global.common.CommonSuccessResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -187,5 +191,78 @@ public class PartyController {
         Integer matchingCount = participantService.matchingCountForWeek(ottId);
 
         return ResponseEntity.ok(CommonSuccessResponse.response(true, MatchingCountResponse.create(ottId, matchingCount), "매칭 인원수 조회에 성공했습니다."));
+    }
+
+    @PostMapping(value = "/join-party")
+    public ResponseEntity<?> joinParty(@RequestBody PartyJoinRequest partyJoinRequest, HttpServletRequest req) {
+        String memberId = req.getHeader("X-Authorization-Id");
+        Long partyId = partyJoinRequest.getPartyId();
+        //파티 인원수 확인 및 파티 가입 가능시 파티 참가자 추가 불가시 false
+        if(partyService.isPartyJoin(partyId, memberId)) {
+            return ResponseEntity.ok(CommonResponse.response(true, "파티 가입 성공"));
+        }
+        return ResponseEntity.ok(CommonResponse.response(false, "파티 가입 실패"));
+    }
+    @PutMapping(value = "/join-party")
+    public ResponseEntity<?> rollBackParty(@RequestBody PartyJoinRequest partyJoinRequest, HttpServletRequest req) {
+        String memberId = req.getHeader("X-Authorization-Id");
+        Long partyId = partyJoinRequest.getPartyId();
+        partyService.isRollBackPartyJoin(partyId, memberId);
+        return ResponseEntity.ok(CommonResponse.response(true, "파티 롤백 성공"));
+    }
+
+    @PostMapping(value = "/matching-apply")
+    public ResponseEntity<?> matchingApply(@RequestBody MathcingApplyRequest MathcingApplyRequest, HttpServletRequest req) {
+        String memberId = req.getHeader("X-Authorization-Id");
+        Long ottId = MathcingApplyRequest.getOttId();
+        String billingKey = MathcingApplyRequest.getBillingKey();
+        partyService.setMatching(ottId, billingKey, memberId);
+        return ResponseEntity.ok(CommonResponse.response(true, "매칭 대기열 저장"));
+    }
+
+    @GetMapping(value = "/test")
+    public ResponseEntity<?> test() {
+        List<OttDTO> ottDTOList = ottService.findAllOtt();
+        for(int i=0; i<ottDTOList.size(); i++) {
+            //사이즈만큼 ottid별 현재인원수가 max가 아닌 파티들 불러오기 생성일자 기준 asc
+            Ott ott = OttDTO.toEntity(ottDTOList.get(i));
+            long ottId = ott.getOttId();
+            int maxCount = ott.getOttHeadcount();
+            List<PartyDTO> partyDTOList = partyService.findJoinPartyList(ott, maxCount);
+            log.info(partyDTOList.size() + " " + ottId);
+            //사이즈가 0이면 break
+            if(partyDTOList.size() == 0) continue;
+            //redis에 해당 ottid list 가져오기
+            long matchSize = partyService.getMatchingSize("matching:"+ottId);
+            //list 사이즈가 0이면 break
+            if(matchSize==0) continue;
+            //list에 memberId와 rdb에 partyId로 매칭 (파티추가및수정) 여기서 실패하면 다른 rdb꺼 실행
+            partyService.matchingParty(partyDTOList, ott, matchSize);
+        }
+
+        return null;
+    }
+
+    @Scheduled(cron = "0 0 0/1 * * *")
+    public void matchingParty() {
+        //ottid 불러오기
+        List<OttDTO> ottDTOList = ottService.findAllOtt();
+        for(int i=0; i<ottDTOList.size(); i++) {
+            //사이즈만큼 ottid별 현재인원수가 max가 아닌 파티들 불러오기 생성일자 기준 asc
+            Ott ott = OttDTO.toEntity(ottDTOList.get(i));
+            long ottId = ott.getOttId();
+            int maxCount = ott.getOttHeadcount();
+            List<PartyDTO> partyDTOList = partyService.findJoinPartyList(ott, maxCount);
+            //사이즈가 0이면 break
+            if(partyDTOList.size() == 0) break;
+            //redis에 해당 ottid list 가져오기
+            long matchSize = partyService.getMatchingSize("matching:"+ottId);
+            //list 사이즈가 0이면 break
+            if(matchSize==0) break;
+
+            //list에 memberId와 rdb에 partyId로 매칭 (파티추가및수정) 여기서 실패하면 다른 rdb꺼 실행
+
+            //정기결제 실행 여기서 실패하면 알림으로 실패 사유와 billingkey 수정 요청 및 rollback
+        }
     }
 }

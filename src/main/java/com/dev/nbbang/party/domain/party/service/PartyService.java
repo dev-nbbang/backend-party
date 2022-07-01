@@ -1,11 +1,13 @@
 package com.dev.nbbang.party.domain.party.service;
 
+import com.dev.nbbang.party.domain.ott.dto.OttDTO;
 import com.dev.nbbang.party.domain.ott.entity.Ott;
 import com.dev.nbbang.party.domain.party.dto.PartyDTO;
 import com.dev.nbbang.party.domain.party.entity.NoticeType;
 import com.dev.nbbang.party.domain.party.entity.Party;
 
 import java.util.List;
+import java.util.Map;
 
 public interface PartyService {
     // 파티 생성
@@ -51,8 +53,25 @@ public interface PartyService {
     int findPrice(Long partyId);
 
     //Ott 가격 정보
-    int findOttPrice(Long partyId);
+    OttDTO findOttPrice(Long partyId);
 
     //환불 로직
 
+    //파티 가입 (LOCK)
+    boolean isPartyJoin(Long partyId, String memberId);
+
+    //파티 롤백 (LOCK)
+    void isRollBackPartyJoin(Long partyId, String memberId);
+
+    //현재인원수가 max가 아닌 파티들 불러오기 생성일자 기준 asc
+    List<PartyDTO> findJoinPartyList(Ott ott, int maxHeadCount);
+
+    //매칭 대기열 사이즈
+    long getMatchingSize(String key);
+
+    //파티와 사용자 매칭
+    void matchingParty(List<PartyDTO> partyDTOList, Ott ott, long size);
+
+    //매칭 지원
+    void setMatching(long ottId, String billingKey, String memberId);
 }

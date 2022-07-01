@@ -1,5 +1,8 @@
 package com.dev.nbbang.party.domain.payment.controller;
 
+import com.dev.nbbang.party.domain.ott.dto.OttDTO;
+import com.dev.nbbang.party.domain.ott.service.OttService;
+import com.dev.nbbang.party.domain.party.dto.PartyDTO;
 import com.dev.nbbang.party.domain.party.service.PartyService;
 import com.dev.nbbang.party.domain.payment.api.service.ImportAPI;
 import com.dev.nbbang.party.domain.payment.dto.request.ImportPaymentRequest;
@@ -17,6 +20,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.Map;
 
 @RestController
@@ -41,7 +48,14 @@ public class PaymentController {
 
         //파티 서비스에서 일일금액, 생성일, 기간을 가지고 만들어진 금액으로 비교
         //******지금 가격은 일일 가격으로 여기서 기간을 곱해서 결제 금액 산출해야됨
-        int partyPrice = partyService.findPrice(partyId); //메소드가 들어갈 자리
+        PartyDTO partyDTO = partyService.findPartyByPartyId(partyId);
+        LocalDateTime endDate = partyDTO.getRegYmd();
+        endDate.plusDays(partyDTO.getPeriod());
+        LocalDateTime nowDate = LocalDateTime.now();
+        LocalDate end = LocalDate.from(endDate);
+        LocalDate now = LocalDate.from(nowDate);
+        long days = ChronoUnit.DAYS.between(now, end);
+        int partyPrice = (int)(partyDTO.getPrice() * days);//메소드가 들어갈 자리
 
         //파티 가격에서 쿠폰할인율과 포인트 사용 금액을 계산한다 (null이 아닐경우)
         //if절에서 paymentCheck && 멤버에서 쿠폰과 포인트를 사용할수 있는지 여부를 판단후 멤버에서 사용 처리 해준다.
@@ -74,7 +88,8 @@ public class PaymentController {
         long partyId = Long.parseLong(merchantInfo[1]);
         //ott에서 가격을 가져오고 변수에 저장
         //**********현재 ott가격만으로 비교하므로 ott가격에서 headcount만큼 나누기 해줘야함
-        int ottPrice = partyService.findOttPrice(partyId);
+        OttDTO ott = partyService.findOttPrice(partyId);
+        int ottPrice = (int)(ott.getOttPrice()/ott.getOttHeadcount());
         //포인트 쿠폰 null 아닐시
         //포인트와 쿠폰을 사용할수 있는지 여부 판단
         //사용할수 있을시 변수에서 쿠폰 포인트 사용 한 값과 프론트에서 받은 가격을 비교해보고 일치시 결제 시작

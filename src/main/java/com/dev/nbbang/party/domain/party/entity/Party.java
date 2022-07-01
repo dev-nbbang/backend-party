@@ -101,8 +101,14 @@ public class Party {
     }
 
     // 파티 현재 인원 수정
-    public void updatePresentHeadcount() {
+    public void decreasePresentHeadCount() {
         if(this.presentHeadcount < 1) return;
         this.presentHeadcount -= 1;
+    }
+
+    // 파티 현재 인원 수정
+    public void increasePresentHeadcount() {
+        if(this.presentHeadcount == this.maxHeadcount) return;
+        this.presentHeadcount += 1;
     }
 }

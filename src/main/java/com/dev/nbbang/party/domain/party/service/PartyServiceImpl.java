@@ -1,7 +1,10 @@
 package com.dev.nbbang.party.domain.party.service;
 
+import com.dev.nbbang.party.domain.ott.dto.OttDTO;
 import com.dev.nbbang.party.domain.ott.entity.Ott;
 import com.dev.nbbang.party.domain.party.dto.PartyDTO;
+import com.dev.nbbang.party.domain.party.dto.request.MatchingRequest;
+import com.dev.nbbang.party.domain.party.dto.response.MatchingInfoResponse;
 import com.dev.nbbang.party.domain.party.entity.NoticeType;
 import com.dev.nbbang.party.domain.party.entity.Participant;
 import com.dev.nbbang.party.domain.party.entity.Party;
@@ -9,21 +12,33 @@ import com.dev.nbbang.party.domain.party.exception.*;
 import com.dev.nbbang.party.domain.party.repository.ParticipantRepository;
 import com.dev.nbbang.party.domain.party.repository.PartyRepository;
 import com.dev.nbbang.party.domain.payment.api.service.ImportAPI;
+import com.dev.nbbang.party.domain.payment.api.service.MemberAPI;
 import com.dev.nbbang.party.domain.payment.repository.PaymentLogRepository;
+import com.dev.nbbang.party.domain.payment.service.PaymentService;
 import com.dev.nbbang.party.domain.qna.entity.Qna;
 import com.dev.nbbang.party.domain.qna.exception.FailDeleteQnaException;
 import com.dev.nbbang.party.domain.qna.repository.QnaRepository;
+import com.dev.nbbang.party.global.common.CommonResponse;
 import com.dev.nbbang.party.global.exception.NbbangException;
+import com.dev.nbbang.party.global.util.AesUtil;
+import com.dev.nbbang.party.global.util.RedisUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
+import org.apache.tomcat.util.codec.binary.Base64;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +48,11 @@ public class PartyServiceImpl implements PartyService {
     private final ParticipantRepository participantRepository;
     private final PaymentLogRepository paymentLogRepository;
     private final ImportAPI importAPI;
+    private final RedisUtil redisUtil;
+    private final PaymentService paymentService;
+    private final AesUtil aesUtil;
+    private final MatchingProducer matchingProducer;
+
     /**
      * 파티장이 새로운 파티를 생성한다. (암호화)
      * @param party 새로운 파티 생성 데이터
@@ -247,8 +267,107 @@ public class PartyServiceImpl implements PartyService {
     }
 
     @Override
-    public int findOttPrice(Long partyId) {
+    public OttDTO findOttPrice(Long partyId) {
         PartyDTO partyDTO = findPartyByPartyId(partyId);
-        return Math.toIntExact(partyDTO.getOtt().getOttPrice());
+        return OttDTO.create(partyDTO.getOtt());
+    }
+
+    @Override
+    @Transactional
+    public boolean isPartyJoin(Long partyId, String memberId) {
+        Party party = Optional.ofNullable(partyRepository.findByPartyId(partyId))
+                .orElseThrow(() -> new NoSuchPartyException("등록되지 않았거나 이미 해체된 파티입니다.", NbbangException.NOT_FOUND_PARTY));
+        if(party.getPresentHeadcount()<party.getMaxHeadcount()) {
+            //파티원 테이블에 파티원 저장
+            participantRepository.save(Participant.builder().party(party).participantId(memberId).participantYmd(LocalDateTime.now()).ottId(party.getOtt().getOttId()).build());
+            party.increasePresentHeadcount();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    @Transactional
+    public void isRollBackPartyJoin(Long partyId, String memberId) {
+        Party party = Optional.ofNullable(partyRepository.findByPartyId(partyId))
+                .orElseThrow(() -> new NoSuchPartyException("등록되지 않았거나 이미 해체된 파티입니다.", NbbangException.NOT_FOUND_PARTY));
+        participantRepository.deleteByPartyAndParticipantId(party, memberId);
+        party.decreasePresentHeadCount();
+    }
+
+    @Override
+    public List<PartyDTO> findJoinPartyList(Ott ott, int maxHeadCount) {
+        List<Party> partyList = partyRepository.findAllByOttAndPresentHeadcountLessThanAndMatchingTypeOrderByRegYmd(ott, maxHeadCount, 2);
+        List<PartyDTO> response = new ArrayList<>();
+        for (Party party : partyList) {
+            response.add(PartyDTO.builder()
+                    .partyId(party.getPartyId())
+                    .ott(party.getOtt())
+                    .leaderId(party.getLeaderId())
+                    .presentHeadcount(party.getPresentHeadcount())
+                    .maxHeadcount(party.getMaxHeadcount())
+                    .regYmd(party.getRegYmd())
+                    .ottAccId(party.getOttAccId())
+                    .ottAccPw(party.getOttAccPw())
+                    .matchingType(party.getMatchingType())
+                    .title(party.getTitle())
+                    .partyDetail(party.getPartyDetail())
+                    .price(party.getPrice())
+                    .period(party.getPeriod())
+                    .partyNotice(party.getPartyNotice())
+                    .build());
+        }
+        return response;
+    }
+
+    @Override
+    public long getMatchingSize(String key) {
+        return redisUtil.getListSize(key);
+    }
+
+    @Override
+    @Transactional
+    public void matchingParty(List<PartyDTO> partyDTOList, Ott ott, long size) {
+        String memberId = redisUtil.getList("matching:"+ott.getOttId());
+        size--;
+        for(int i=0; i<partyDTOList.size(); i++) {
+
+            long partyId = partyDTOList.get(i).getPartyId();
+            if(isPartyJoin(partyId, memberId)) {
+                String billingKeyEnc = redisUtil.getData("matching:"+memberId);
+                String mercahntUid = memberId+"-"+partyId+"-"+importAPI.randomString();
+                int price = (int) (ott.getOttPrice()/ott.getOttHeadcount());
+//                long price = ott.getOttPrice();
+                Map<String, Object> paymentInfo = paymentService.autoPayment(billingKeyEnc, mercahntUid, (int) price, memberId);
+                if(paymentInfo == null) {
+                    isRollBackPartyJoin(partyId, memberId);
+                    //알람 설정
+                    try {
+                        matchingProducer.sendFailMatching(new MatchingRequest("manager", memberId,"결제 오류!\n 결제 카드를 확인하시고 다시 매칭 해주세요.", LocalDateTime.now(), "NOTICE", 0));
+                    } catch (JsonProcessingException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    paymentService.paymentLogSave(paymentInfo.get("imp_uid").toString(), memberId, partyId, "정기 결제입니다", (int)price);
+                    String merchantId = paymentService.schedulePayment(billingKeyEnc, mercahntUid, (int)price);
+                    paymentService.saveBilling(memberId, aesUtil.decrypt(billingKeyEnc), merchantId, partyId);
+                    try {
+                        matchingProducer.sendFailMatching(new MatchingRequest("manager", memberId,"매칭이 성공되었습니다.\n 마이페이지에서 파티를 확인해보세요", LocalDateTime.now(), "NOTICE", 0));
+                    } catch (JsonProcessingException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if(size <= 0) break;
+                memberId = redisUtil.getList("matching:"+ott.getOttId());
+                size--;
+            }
+        }
+    }
+
+    @Override
+    public void setMatching(long ottId, String billingKey, String memberId) {
+        redisUtil.setList("matching:" + ottId, memberId);
+        redisUtil.setData("matching:" + memberId, billingKey);
+//        redisUtil.setData("matching:" + memberId, aesUtil.encrypt(billingKey));
     }
 }

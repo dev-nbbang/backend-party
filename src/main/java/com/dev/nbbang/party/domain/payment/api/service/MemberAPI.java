@@ -1,5 +1,6 @@
 package com.dev.nbbang.party.domain.payment.api.service;
 
+import com.dev.nbbang.party.domain.party.dto.response.MatchingInfoResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -18,7 +20,7 @@ public class MemberAPI {
     private final RestTemplate restTemplate;
 
     private final String memberUrl = "http://localhost:9000/nbbang-user/members/discount";
-//    private final String billingKeyUrl = "http://localhost:9000/nbbang-user/account/billing";
+    private final String billingKeyUrl = "http://localhost:9000/nbbang-user/account/billings";
 
     public boolean discount(String memberId, Long point, Integer couponId, Integer couponType) {
         HttpHeaders httpHeaders = new HttpHeaders();
@@ -51,12 +53,14 @@ public class MemberAPI {
         return false;
     }
 
-//    public String getBillingKey(String memberId) {
+//    public Object getBillingKey(List<MatchingInfoResponse> list) {
 //        HttpHeaders httpHeaders = new HttpHeaders();
 //        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-//        httpHeaders.add("X-Authorization-Id", memberId);
 //
-//        HttpEntity request = new HttpEntity<>(httpHeaders);
+//        JSONObject jsonObject = new JSONObject();
+//        jsonObject.put("matching", list);
+//
+//        HttpEntity<String> request = new HttpEntity<>(jsonObject.toString(), httpHeaders);
 //
 //        ResponseEntity<String> response = restTemplate.exchange(billingKeyUrl, HttpMethod.GET ,request, String.class);
 //        try {
@@ -64,7 +68,7 @@ public class MemberAPI {
 //                ObjectMapper objectMapper = new ObjectMapper();
 //
 //                Map<String, Object> map = objectMapper.readValue(response.getBody(), Map.class);
-//                if((boolean)map.get("status")) return map.get("billingKey").toString();
+//                if((boolean)map.get("status")) return map.get("billingKeys");
 //            }
 //        } catch (JsonProcessingException e) {
 //            e.printStackTrace();

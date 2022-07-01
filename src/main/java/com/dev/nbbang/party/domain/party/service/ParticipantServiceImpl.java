@@ -45,7 +45,7 @@ public class ParticipantServiceImpl implements ParticipantService {
                 );
 
         // 3. 파티 테이블 업데이트 (현재 인원수 한명 감소)
-        findParty.updatePresentHeadcount();
+        findParty.decreasePresentHeadCount();
 
         // 4. 매칭 테이블 넣어줘야하는지 판단 (정기결제경우)
     }

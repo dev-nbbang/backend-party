@@ -8,6 +8,7 @@ import com.dev.nbbang.party.domain.payment.entity.Billing;
 import com.dev.nbbang.party.domain.payment.entity.PaymentLog;
 import com.dev.nbbang.party.domain.payment.repository.BillingRepository;
 import com.dev.nbbang.party.domain.payment.repository.PaymentLogRepository;
+import com.dev.nbbang.party.global.util.AesUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
@@ -27,6 +28,8 @@ public class PaymentServiceImpl implements PaymentService{
     private final MemberAPI memberAPI;
     private final PaymentLogRepository paymentLogRepository;
     private final BillingRepository billingRepository;
+    private final AesUtil aesUtil;
+
     @Override
     public Map<String, Object> getPaymentInfo(String memberId, String merchantMemberId, String impUid) {
         Map<String, Object> paymentInfo = null;
@@ -58,7 +61,7 @@ public class PaymentServiceImpl implements PaymentService{
         if(memberId.equals(merchantInfo[0])) {
             String accessToken = importAPI.getAccessToken();
             Map<String, Object> paymentInfo = importAPI.Payment(accessToken,
-                    customer_uid,merchantUid, price, "월간 이용권 정기결제");
+                    aesUtil.decrypt(customer_uid),merchantUid, price, "월간 이용권 정기결제");
             log.info("autoPaymentService" + String.valueOf(paymentInfo));
             if(paymentInfo.get("status").equals("paid")) return paymentInfo;
         }
@@ -70,7 +73,7 @@ public class PaymentServiceImpl implements PaymentService{
         String accessToken = importAPI.getAccessToken();
         String[] merchantInfo = merchant_uid.split("-");
         StringBuilder sb = new StringBuilder(merchantInfo[0] + "-" + merchantInfo[1] + "-" + importAPI.randomString());
-        importAPI.Schedule(accessToken, billingKey, sb.toString(), price, "월간 이용권 정기결제");
+        importAPI.Schedule(accessToken, aesUtil.decrypt(billingKey), sb.toString(), price, "월간 이용권 정기결제");
         return sb.toString();
     }
 
@@ -120,7 +123,7 @@ public class PaymentServiceImpl implements PaymentService{
         Date start = cal.getTime();
         cal.add(Calendar.MONTH, 1);
         billingRepository.save(Billing.builder()
-                .customerId(customerId).merchantId(merchantId).partyId(partyId).memberId(memberId)
+                .customerId(aesUtil.encrypt(customerId)).merchantId(merchantId).partyId(partyId).memberId(memberId)
                 .startYMD(new java.sql.Date(start.getTime())).endYMD(new java.sql.Date(cal.getTime().getTime())).billingRegYMD(Timestamp.valueOf(LocalDateTime.now())).build());
     }
 
@@ -133,7 +136,7 @@ public class PaymentServiceImpl implements PaymentService{
     @Transactional
     public void deleteBilling(String memberId, Long partyId, String customerId, String merchantId) {
         String accessToken = importAPI.getAccessToken();
-        importAPI.unSchedule(accessToken,customerId,merchantId);
+        importAPI.unSchedule(accessToken,aesUtil.decrypt(customerId),merchantId);
         billingRepository.deleteByMemberIdAndPartyId(memberId, partyId);
     }
 
