@@ -58,7 +58,7 @@ public interface PartyService {
     //환불 로직
 
     //파티 가입 (LOCK)
-    boolean isPartyJoin(Long partyId, String memberId);
+    PartyDTO isPartyJoin(Long partyId, String memberId);
 
     //파티 롤백 (LOCK)
     void isRollBackPartyJoin(Long partyId, String memberId);
@@ -74,4 +74,6 @@ public interface PartyService {
 
     //매칭 지원
     void setMatching(long ottId, String billingKey, String memberId);
+
+//    void autoMatching(Party party);
 }

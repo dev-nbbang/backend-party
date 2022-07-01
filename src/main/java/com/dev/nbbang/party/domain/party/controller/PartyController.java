@@ -31,6 +31,8 @@ public class PartyController {
     private final OttService ottService;
     private final ParticipantService participantService;
 
+    private final String MATCHING_REDIS_PREFIX = "matching:";
+
     @PostMapping(value = "/new")
     public ResponseEntity<?> createParty(@RequestBody PartyCreateRequest request, HttpServletRequest servletRequest) {
         log.info("[Party Controller - Create Party] 파티 생성");
@@ -42,6 +44,12 @@ public class PartyController {
 
         // 파티 생성
         PartyDTO createdParty = partyService.createParty(PartyCreateRequest.toEntity(request, findOtt));
+
+//        // 파티 생성 시 파티원 자동 매칭 시작 (레디스 테이블에 인원이 있는 경우 매칭 시작)
+//        if (partyService.getMatchingSize(MATCHING_REDIS_PREFIX + createdParty.getOtt().getOttId()) > 0) {
+//            partyService.autoMatching(PartyDTO.toEntity(createdParty));
+//        }
+
 
         return ResponseEntity.status(HttpStatus.CREATED).body(CommonSuccessResponse.response(true, PartyCreateResponse.create(createdParty), "파티 생성이 완료되었습니다."));
 
@@ -196,13 +204,19 @@ public class PartyController {
     @PostMapping(value = "/join-party")
     public ResponseEntity<?> joinParty(@RequestBody PartyJoinRequest partyJoinRequest, HttpServletRequest req) {
         String memberId = req.getHeader("X-Authorization-Id");
-        Long partyId = partyJoinRequest.getPartyId();
+
         //파티 인원수 확인 및 파티 가입 가능시 파티 참가자 추가 불가시 false
-        if(partyService.isPartyJoin(partyId, memberId)) {
+        try {
+            partyService.isPartyJoin(partyJoinRequest.getPartyId(), memberId);
             return ResponseEntity.ok(CommonResponse.response(true, "파티 가입 성공"));
+        }
+        // 수정
+        catch (Exception e){
+            e.printStackTrace();
         }
         return ResponseEntity.ok(CommonResponse.response(false, "파티 가입 실패"));
     }
+
     @PutMapping(value = "/join-party")
     public ResponseEntity<?> rollBackParty(@RequestBody PartyJoinRequest partyJoinRequest, HttpServletRequest req) {
         String memberId = req.getHeader("X-Authorization-Id");
@@ -223,19 +237,21 @@ public class PartyController {
     @GetMapping(value = "/test")
     public ResponseEntity<?> test() {
         List<OttDTO> ottDTOList = ottService.findAllOtt();
-        for(int i=0; i<ottDTOList.size(); i++) {
-            //사이즈만큼 ottid별 현재인원수가 max가 아닌 파티들 불러오기 생성일자 기준 asc
-            Ott ott = OttDTO.toEntity(ottDTOList.get(i));
-            long ottId = ott.getOttId();
-            int maxCount = ott.getOttHeadcount();
-            List<PartyDTO> partyDTOList = partyService.findJoinPartyList(ott, maxCount);
-            log.info(partyDTOList.size() + " " + ottId);
+        for (OttDTO ottDTO : ottDTOList) {
+            Ott ott = OttDTO.toEntity(ottDTO);
+
+            List<PartyDTO> partyDTOList = partyService.findJoinPartyList(ott, ott.getOttHeadcount());
+            log.info(partyDTOList.size() + " " + ott.getOttId());
+
             //사이즈가 0이면 break
-            if(partyDTOList.size() == 0) continue;
+            if (partyDTOList.size() == 0) continue;
+
             //redis에 해당 ottid list 가져오기
-            long matchSize = partyService.getMatchingSize("matching:"+ottId);
+            long matchSize = partyService.getMatchingSize("matching:" + (long) ott.getOttId());
+
             //list 사이즈가 0이면 break
-            if(matchSize==0) continue;
+            if (matchSize == 0) continue;
+
             //list에 memberId와 rdb에 partyId로 매칭 (파티추가및수정) 여기서 실패하면 다른 rdb꺼 실행
             partyService.matchingParty(partyDTOList, ott, matchSize);
         }
@@ -247,18 +263,18 @@ public class PartyController {
     public void matchingParty() {
         //ottid 불러오기
         List<OttDTO> ottDTOList = ottService.findAllOtt();
-        for(int i=0; i<ottDTOList.size(); i++) {
+        for (int i = 0; i < ottDTOList.size(); i++) {
             //사이즈만큼 ottid별 현재인원수가 max가 아닌 파티들 불러오기 생성일자 기준 asc
             Ott ott = OttDTO.toEntity(ottDTOList.get(i));
             long ottId = ott.getOttId();
             int maxCount = ott.getOttHeadcount();
             List<PartyDTO> partyDTOList = partyService.findJoinPartyList(ott, maxCount);
             //사이즈가 0이면 break
-            if(partyDTOList.size() == 0) break;
+            if (partyDTOList.size() == 0) break;
             //redis에 해당 ottid list 가져오기
-            long matchSize = partyService.getMatchingSize("matching:"+ottId);
+            long matchSize = partyService.getMatchingSize("matching:" + ottId);
             //list 사이즈가 0이면 break
-            if(matchSize==0) break;
+            if (matchSize == 0) break;
 
             //list에 memberId와 rdb에 partyId로 매칭 (파티추가및수정) 여기서 실패하면 다른 rdb꺼 실행
 
