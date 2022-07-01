@@ -19,9 +19,14 @@ public class RedisUtil {
         return operations.opsForList().leftPop(key);
     }
 
-    public void setList(String key, String value) {
+    public void leftPush(String key, String value) {
         RedisOperations<String, String> operations = redisTemplate.opsForList().getOperations();
         operations.opsForList().leftPush(key, value);
+    }
+
+    public void rightPush(String key, String value) {
+        RedisOperations<String, String> operations = redisTemplate.opsForList().getOperations();
+        operations.opsForList().rightPush(key, value);
     }
 
     public long deleteList(String key, String value) {

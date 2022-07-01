@@ -20,28 +20,17 @@ import java.util.concurrent.ExecutionException;
 @Slf4j
 @RequiredArgsConstructor
 public class MatchingProducer {
-    private final String TOPIC = "matching-fail";
-    private final String TOPIC2 = "matching-success";
+    private final String TOPIC = "matching-info-notify";
 
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
-
     @Transactional
-    public void sendFailMatching(MatchingRequest matchingRequest) throws JsonProcessingException {
+    public void sendNotify(MatchingRequest matchingRequest) throws JsonProcessingException {
         log.info("[MemberProducer] Auth Service -> Member Service");
         String sendMessage = objectMapper.writeValueAsString(matchingRequest);
 
         log.info("[MemberProducer] sendMessage : " + sendMessage);
         kafkaTemplate.send(TOPIC, sendMessage);
-    }
-
-    @Transactional
-    public void sendMatching(MatchingRequest matchingRequest) throws JsonProcessingException {
-        log.info("[MemberProducer] Auth Service -> Member Service");
-        String sendMessage = objectMapper.writeValueAsString(matchingRequest);
-
-        log.info("[MemberProducer] sendMessage : " + sendMessage);
-        kafkaTemplate.send(TOPIC2, sendMessage);
     }
 }

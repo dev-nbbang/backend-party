@@ -10,20 +10,20 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor
 public class MatchingRequest {
-    private String NOTIFY_SENDER;
-    private String NOTIFY_RECEIVER;
-    private String NOTIFY_DETAIL;
-    private LocalDateTime NOTIFY_YMD;
-    private String NOTIFY_TYPE;
-    private long NOTIFY_TYPE_ID;
+    private String notifySender;
+    private String notifyReceiver;
+    private String notifyDetail;
+    private LocalDateTime notifyYmd;
+    private String notifyType;
+    private long notifyTypeId;
 
     @Builder
-    public MatchingRequest(String NOTIFY_SENDER, String NOTIFY_RECEIVER, String NOTIFY_DETAIL, LocalDateTime NOTIFY_YMD, String NOTIFY_TYPE, long NOTIFY_TYPE_ID) {
-        this.NOTIFY_SENDER = NOTIFY_SENDER;
-        this.NOTIFY_RECEIVER = NOTIFY_RECEIVER;
-        this.NOTIFY_DETAIL = NOTIFY_DETAIL;
-        this.NOTIFY_YMD = NOTIFY_YMD;
-        this.NOTIFY_TYPE = NOTIFY_TYPE;
-        this.NOTIFY_TYPE_ID = NOTIFY_TYPE_ID;
+    public MatchingRequest(String notifySender, String notifyReceiver, String notifyDetail, LocalDateTime notifyYmd, String notifyType, long notifyTypeId) {
+        this.notifySender = notifySender;
+        this.notifyReceiver = notifyReceiver;
+        this.notifyDetail = notifyDetail;
+        this.notifyYmd = notifyYmd;
+        this.notifyType = notifyType;
+        this.notifyTypeId = notifyTypeId;
     }
 }
