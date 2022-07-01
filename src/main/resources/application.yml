@@ -41,9 +41,16 @@ logging:
           descriptor:
             sql: trace
 
+<<<<<<< HEAD
 kafka:
   host: 129.154.222.27
   port: 9092
 
 aes:
   key: akf39dk2lskcv4uc834zuwi1jcnma2f3
+=======
+## kakfa
+kafka:
+  host: 129.154.222.27
+  port: 9092
+>>>>>>> 5bd945e081e59504b6c6e8cc80c25af6ddd4db69
