@@ -29,9 +29,14 @@ public class RedisUtil {
         operations.opsForList().rightPush(key, value);
     }
 
-    public long deleteList(String key, String value) {
+    public long lRem(String key, long count, String value) {
         RedisOperations<String, String> operations = redisTemplate.opsForList().getOperations();
-        return operations.opsForList().remove(key, 0, value);
+        return operations.opsForList().remove(key, count, value);
+    }
+
+    public boolean deleteList(String key) {
+        RedisOperations<String, String> operations = redisTemplate.opsForList().getOperations();
+        return operations.delete(key);
     }
 
     public long getListSize(String key) {

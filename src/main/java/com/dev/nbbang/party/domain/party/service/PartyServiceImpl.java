@@ -24,6 +24,7 @@ import com.dev.nbbang.party.global.util.AesUtil;
 import com.dev.nbbang.party.global.util.RedisUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
@@ -42,6 +43,7 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PartyServiceImpl implements PartyService {
     private final PartyRepository partyRepository;
     private final QnaRepository qnaRepository;
@@ -349,26 +351,27 @@ public class PartyServiceImpl implements PartyService {
 
         String memberId = redisUtil.getList(MATCHING_KEY_PREFIX + ott.getOttId());
         waitingMemberCount--;
-        while (!partyQueue.isEmpty() && waitingMemberCount > 0) {
+        log.info(partyQueue.size()+"");
+        while (!partyQueue.isEmpty() && waitingMemberCount >= 0) {
             PartyDTO party = partyQueue.poll();
             final Long partyId = party.getPartyId();
 
             // 파티 가입에 성공하는 경우
             try {
                 PartyDTO joinParty = isPartyJoin(partyId, memberId);
-
+                log.info("joinParty");
                 // 알림 데이터
                 String notifyType = "PARTY";
                 String notifyDetail = "매칭이 성공되었습니다.\n 마이페이지에서 파티를 확인해보세요";
                 Long notifyTypeId = partyId;
 
-                final String billingKey = redisUtil.getData(MATCHING_KEY_PREFIX + memberId);
+                final String billingKey = redisUtil.getData("billing:" + memberId);
                 final String merchantUID = memberId + "-" + partyId + "-" + importAPI.randomString();
                 final int price = (int) (ott.getOttPrice() / ott.getOttHeadcount());
 
                 // 결제 진행
                 Map<String, Object> paymentResponse = paymentService.autoPayment(billingKey, merchantUID, price, memberId);
-
+                log.info(paymentResponse.toString());
                 // 결제 성공 시
                 if (paymentResponse != null) {
                     // 결제 이력을 넣어준다.
@@ -406,6 +409,13 @@ public class PartyServiceImpl implements PartyService {
                 if(joinParty.getMaxHeadcount() > joinParty.getPresentHeadcount())
                     partyQueue.add(joinParty);
 
+                //개인 매칭 열 확인 후 삭제
+                redisUtil.lRem("matching:"+memberId, 0, String.valueOf(ott.getOttId()));
+                if(redisUtil.getListSize("matching:"+memberId)==0) {
+                    redisUtil.deleteList("matching:"+memberId);
+                    redisUtil.deleteData("billing:"+memberId);
+                }
+
                 // 다음 사람 매칭
                 memberId = redisUtil.getList(MATCHING_KEY_PREFIX + ott.getOttId());
                 waitingMemberCount--;
@@ -425,7 +435,8 @@ public class PartyServiceImpl implements PartyService {
     @Override
     public void setMatching(long ottId, String billingKey, String memberId) {
         redisUtil.rightPush("matching:" + ottId, memberId);
-        redisUtil.setData("matching:" + memberId, billingKey);
-//        redisUtil.setData("matching:" + memberId, aesUtil.encrypt(billingKey));
+        redisUtil.rightPush("matching:"+memberId, String.valueOf(ottId));
+//        redisUtil.setData("billing:" + memberId, billingKey);
+        redisUtil.setData("billing:" + memberId, aesUtil.encrypt(billingKey));
     }
 }
