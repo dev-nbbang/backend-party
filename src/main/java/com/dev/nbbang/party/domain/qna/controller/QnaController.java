@@ -46,9 +46,9 @@ public class QnaController {
         // 문의 등록
         QnaDTO savedQuestion = qnaService.createQuestion(QuestionCreateRequest.toEntity(request, findParty));
 
-        // 문의 등록 후 알림 메세지 전송
+        // 문의 등록 후 알림 메세지 전송 (QNA 문의 번호를 주는게 맞지?)
         notifyProducer.sendNotify(
-                NotifyRequest.create(request.getQnaSender(), findParty.getLeaderId(), findParty.getOtt().getOttName() + "파티의 문의가 등록되었습니다.", "QNA", findParty.getPartyId())
+                NotifyRequest.create(request.getQnaSender(), findParty.getLeaderId(), findParty.getOtt().getOttName() + "파티의 문의가 등록되었습니다.", "QNA", savedQuestion.getQnaId())
         );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(CommonSuccessResponse.response(true, QuestionInformationResponse.create(savedQuestion), "성공적으로 문의를 등록했습니다."));
