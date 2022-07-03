@@ -14,15 +14,26 @@ public class NotifyRequest {
     private String notifyDetail;
     private LocalDateTime notifyYmd;
     private String notifyType;
-    private long notifyTypeId;
+    private Long notifyTypeId;
 
     @Builder
-    public NotifyRequest(String notifySender, String notifyReceiver, String notifyDetail, LocalDateTime notifyYmd, String notifyType, long notifyTypeId) {
+    public NotifyRequest(String notifySender, String notifyReceiver, String notifyDetail, LocalDateTime notifyYmd, String notifyType, Long notifyTypeId) {
         this.notifySender = notifySender;
         this.notifyReceiver = notifyReceiver;
         this.notifyDetail = notifyDetail;
         this.notifyYmd = notifyYmd;
         this.notifyType = notifyType;
         this.notifyTypeId = notifyTypeId;
+    }
+
+    public static NotifyRequest create(String notifySender, String notifyReceiver, String notifyDetail, String notifyType, Long notifyTypeId) {
+        return NotifyRequest.builder()
+                .notifySender(notifySender)
+                .notifyReceiver(notifyReceiver)
+                .notifyDetail(notifyDetail)
+                .notifyYmd(LocalDateTime.now())
+                .notifyType(notifyType)
+                .notifyTypeId(notifyTypeId)
+                .build();
     }
 }
