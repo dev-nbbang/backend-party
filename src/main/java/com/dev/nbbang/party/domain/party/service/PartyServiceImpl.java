@@ -19,7 +19,9 @@ import com.dev.nbbang.party.domain.qna.entity.Qna;
 import com.dev.nbbang.party.domain.qna.exception.FailDeleteQnaException;
 import com.dev.nbbang.party.domain.qna.repository.QnaRepository;
 import com.dev.nbbang.party.global.common.CommonResponse;
+import com.dev.nbbang.party.global.common.NotifyRequest;
 import com.dev.nbbang.party.global.exception.NbbangException;
+import com.dev.nbbang.party.global.service.NotifyProducer;
 import com.dev.nbbang.party.global.util.AesUtil;
 import com.dev.nbbang.party.global.util.RedisUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -53,7 +55,9 @@ public class PartyServiceImpl implements PartyService {
     private final RedisUtil redisUtil;
     private final PaymentService paymentService;
     private final AesUtil aesUtil;
-    private final MatchingProducer matchingProducer;
+    private final MatchingProducer matchingProducer; // NotifyProducer로 대체
+    private final NotifyProducer notifyProducer;
+
 
     private final String MATCHING_KEY_PREFIX = "matching:";
 
@@ -110,6 +114,24 @@ public class PartyServiceImpl implements PartyService {
         Party findParty = validationLeader(partyId, leaderId);
 
         // 3. 파티원에게 파티 해체 알림
+        List<Participant> findParticipants = participantRepository.findAllByParty(findParty);
+        for (Participant participant : findParticipants) {
+            String message = findParty.getOtt().getOttName() + " 파티장이 파티를 해체했습니다. 남은 기간에 비례해서 환불 예정입니다.";
+
+            try {
+                notifyProducer.sendNotify(NotifyRequest.builder()
+                        .notifySender(leaderId)
+                        .notifyReceiver(participant.getParticipantId())
+                        .notifyDetail(message)
+                        .notifyYmd(LocalDateTime.now())
+                        .notifyType("PARTY")
+                        .notifyTypeId(partyId)
+                        .build());
+            } catch (JsonProcessingException e) {
+                log.error("파티 해체 알림 메세지 전송에 실패했습니다.");
+                log.error("실패 정보 participant : {}, partyId : {}", participant.getParticipantId(), partyId);
+            }
+        }
 
         // 4. 파티원 환불 처리
 
@@ -117,7 +139,6 @@ public class PartyServiceImpl implements PartyService {
         participantRepository.deleteByParty(findParty);
 
         // 5-1. 파티원 삭제 확인
-        List<Participant> findParticipants = participantRepository.findAllByParty(findParty);
         if (!findParticipants.isEmpty())
             throw new FailDeleteParticipantException("해당 파티에 참가한 파티원 탈퇴에 실패했습니다.", NbbangException.FAIL_TO_DELETE_PARTICIPANT);
 
