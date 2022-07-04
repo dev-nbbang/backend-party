@@ -19,7 +19,9 @@ import com.dev.nbbang.party.domain.qna.entity.Qna;
 import com.dev.nbbang.party.domain.qna.exception.FailDeleteQnaException;
 import com.dev.nbbang.party.domain.qna.repository.QnaRepository;
 import com.dev.nbbang.party.global.common.CommonResponse;
+import com.dev.nbbang.party.global.common.NotifyRequest;
 import com.dev.nbbang.party.global.exception.NbbangException;
+import com.dev.nbbang.party.global.service.NotifyProducer;
 import com.dev.nbbang.party.global.util.AesUtil;
 import com.dev.nbbang.party.global.util.RedisUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -44,6 +46,7 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional(readOnly = true)
 public class PartyServiceImpl implements PartyService {
     private final PartyRepository partyRepository;
     private final QnaRepository qnaRepository;
@@ -53,7 +56,9 @@ public class PartyServiceImpl implements PartyService {
     private final RedisUtil redisUtil;
     private final PaymentService paymentService;
     private final AesUtil aesUtil;
-    private final MatchingProducer matchingProducer;
+    private final MatchingProducer matchingProducer; // NotifyProducer로 대체
+    private final NotifyProducer notifyProducer;
+
 
     private final String MATCHING_KEY_PREFIX = "matching:";
 
@@ -90,6 +95,7 @@ public class PartyServiceImpl implements PartyService {
      * @return PartyDTO 조회한 파티 데이터 정보
      */
     @Override
+    @Transactional
     public PartyDTO findPartyByPartyId(Long partyId) {
         // 1. 고유한 파티 아이디로 파티 정보 조회
         Party findParty = Optional.ofNullable(partyRepository.findByPartyId(partyId)).orElseThrow(() -> new NoSuchPartyException("등록되지 않았거나 이미 해체된 파티입니다.", NbbangException.NOT_FOUND_PARTY));
@@ -110,17 +116,27 @@ public class PartyServiceImpl implements PartyService {
         Party findParty = validationLeader(partyId, leaderId);
 
         // 3. 파티원에게 파티 해체 알림
+        List<Participant> findParticipants = participantRepository.findAllByParty(findParty);
 
         // 4. 파티원 환불 처리
 
         // 5. 파티원 테이블 삭제
         participantRepository.deleteByParty(findParty);
 
-        // 5-1. 파티원 삭제 확인
-        List<Participant> findParticipants = participantRepository.findAllByParty(findParty);
-        if (!findParticipants.isEmpty())
-            throw new FailDeleteParticipantException("해당 파티에 참가한 파티원 탈퇴에 실패했습니다.", NbbangException.FAIL_TO_DELETE_PARTICIPANT);
+        // 3. 파티원에게 파티 해체 알림
+        for (Participant participant : findParticipants) {
+            // 파티장 제외 파티원에게만 메세지 전송
+            if(!participant.getParticipantId().equals(leaderId)) {
+                String message = findParty.getOtt().getOttName() + " 파티장이 파티를 해체했습니다. 남은 기간에 비례해서 환불 예정입니다.";
 
+                try {
+                    notifyProducer.sendNotify(NotifyRequest.create(leaderId, participant.getParticipantId(), message, "PARTY", partyId));
+                } catch (JsonProcessingException e) {
+                    log.error("파티 해체 알림 메세지 전송에 실패했습니다.");
+                    log.error("실패 정보 participant : {}, partyId : {}", participant.getParticipantId(), partyId);
+                }
+            }
+        }
         // 6. QNA 테이블 삭제
         qnaRepository.deleteByParty(findParty);
 
@@ -394,13 +410,14 @@ public class PartyServiceImpl implements PartyService {
 
                 // 알림 전송
                 try {
-                    matchingProducer.sendNotify(MatchingRequest.builder()
-                            .notifySender("manager")
-                            .notifyReceiver(memberId)
-                            .notifyDetail(notifyDetail)
-                            .notifyType(notifyType)
-                            .notifyTypeId(notifyTypeId)
-                            .build());
+//                    matchingProducer.sendNotify(MatchingRequest.builder()
+//                            .notifySender("manager")
+//                            .notifyReceiver(memberId)
+//                            .notifyDetail(notifyDetail)
+//                            .notifyType(notifyType)
+//                            .notifyTypeId(notifyTypeId)
+//                            .build());
+                    notifyProducer.sendNotify(NotifyRequest.create("manager", memberId, notifyDetail, notifyType, notifyTypeId));
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();
                 }
