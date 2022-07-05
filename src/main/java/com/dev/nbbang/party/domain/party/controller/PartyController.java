@@ -234,6 +234,28 @@ public class PartyController {
         return ResponseEntity.ok(CommonResponse.response(true, "매칭 대기열 저장"));
     }
 
+    @GetMapping(value = "/matching-list")
+    public ResponseEntity<?> getMathcingList(HttpServletRequest req) {
+        String memberId = req.getHeader("X-Authorization-Id");
+        List<String> ottIds = partyService.matchingList(memberId);
+        if(ottIds==null) return ResponseEntity.ok(CommonSuccessResponse.response(false, null, "매칭대기열이 없습니다"));
+        return ResponseEntity.ok(CommonSuccessResponse.response(true, ottIds, "매칭 대기열 리스트입니다"));
+    }
+
+    @DeleteMapping(value="/matching-list")
+    public ResponseEntity<?> deleteMathcingList(@RequestBody MatchingListRequest matchingListRequest, HttpServletRequest req) {
+        String memberId = req.getHeader("X-Authorization-Id");
+        partyService.deleteMatchingList(matchingListRequest.getOttIds(), memberId);
+        return ResponseEntity.ok(CommonResponse.response(true, "매칭 대기열 삭제 완료"));
+    }
+
+    @PutMapping(value="/billing")
+    public ResponseEntity<?> updateBilling(@RequestBody MatchingBillingRequest matchingBillingRequest, HttpServletRequest req) {
+        String memberId = req.getHeader("X-Authorization-Id");
+        partyService.changeBilling(matchingBillingRequest.getBillingKey(), memberId);
+        return ResponseEntity.ok(CommonResponse.response(true, "매칭 대기열 삭제 완료"));
+    }
+
     @GetMapping(value = "/test")
     public ResponseEntity<?> test() {
         List<OttDTO> ottDTOList = ottService.findAllOtt();

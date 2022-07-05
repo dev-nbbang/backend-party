@@ -8,11 +8,17 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
 public class RedisUtil {
     private final StringRedisTemplate redisTemplate;
+
+    public List<String> getListRange(String key, long start, long end) {
+        RedisOperations<String, String> operations = redisTemplate.opsForList().getOperations();
+        return operations.opsForList().range(key, start, end);
+    }
 
     public String getList(String key) {
         RedisOperations<String, String> operations = redisTemplate.opsForList().getOperations();

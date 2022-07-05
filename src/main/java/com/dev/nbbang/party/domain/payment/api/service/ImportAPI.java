@@ -12,7 +12,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.*;
 
 
@@ -104,14 +106,17 @@ public class ImportAPI {
         throw new FailImportServerException("server 접근 실패", NbbangException.FAIL_TO_IMPORT_SERVER);
     }
 
-    public void Schedule(String accessToken, String billingKey, String merchant_uid, int price, String name) {
+    public void Schedule(String accessToken, String billingKey, String merchant_uid, int price, String name, LocalDateTime localDateTime) {
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_JSON);
         httpHeaders.add("Authorization", accessToken);
-        Calendar c = Calendar.getInstance();
-        long now = c.getTimeInMillis();
-        c.add(Calendar.MONTH, 1);
-        long schedule_at = (now / 1000) + ((c.getTimeInMillis()-now)/1000);
+        Timestamp timestamp = Timestamp.valueOf(localDateTime);
+//        Calendar c = Calendar.getInstance();
+        long now = timestamp.getTime();
+        localDateTime.plusMonths(1);
+        timestamp = Timestamp.valueOf(localDateTime);
+//        c.add(Calendar.MONTH, 1);
+        long schedule_at = (now / 1000) + ((timestamp.getTime()-now)/1000);
 //        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
 
 //        String[] merchantInfo = merchant_uid.split("-");

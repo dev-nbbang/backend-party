@@ -13,6 +13,9 @@ import com.dev.nbbang.party.domain.party.repository.ParticipantRepository;
 import com.dev.nbbang.party.domain.party.repository.PartyRepository;
 import com.dev.nbbang.party.domain.payment.api.service.ImportAPI;
 import com.dev.nbbang.party.domain.payment.api.service.MemberAPI;
+import com.dev.nbbang.party.domain.payment.entity.Billing;
+import com.dev.nbbang.party.domain.payment.entity.PaymentLog;
+import com.dev.nbbang.party.domain.payment.repository.BillingRepository;
 import com.dev.nbbang.party.domain.payment.repository.PaymentLogRepository;
 import com.dev.nbbang.party.domain.payment.service.PaymentService;
 import com.dev.nbbang.party.domain.qna.entity.Qna;
@@ -58,6 +61,7 @@ public class PartyServiceImpl implements PartyService {
     private final AesUtil aesUtil;
     private final MatchingProducer matchingProducer; // NotifyProducer로 대체
     private final NotifyProducer notifyProducer;
+    private final BillingRepository billingRepository;
 
 
     private final String MATCHING_KEY_PREFIX = "matching:";
@@ -95,7 +99,6 @@ public class PartyServiceImpl implements PartyService {
      * @return PartyDTO 조회한 파티 데이터 정보
      */
     @Override
-    @Transactional
     public PartyDTO findPartyByPartyId(Long partyId) {
         // 1. 고유한 파티 아이디로 파티 정보 조회
         Party findParty = Optional.ofNullable(partyRepository.findByPartyId(partyId)).orElseThrow(() -> new NoSuchPartyException("등록되지 않았거나 이미 해체된 파티입니다.", NbbangException.NOT_FOUND_PARTY));
@@ -119,6 +122,25 @@ public class PartyServiceImpl implements PartyService {
         List<Participant> findParticipants = participantRepository.findAllByParty(findParty);
 
         // 4. 파티원 환불 처리
+        LocalDateTime partyDateTime = findParty.getRegYmd();
+        int period = findParty.getPeriod();
+        partyDateTime.plusDays(period);
+        for(Participant participant : findParticipants) {
+            if(!participant.getParticipantId().equals(leaderId)) {
+                long totalDays = Duration.between(partyDateTime, participant.getParticipantYmd()).toDays();
+                long nowDays = Duration.between(partyDateTime, LocalDateTime.now()).toDays();
+                PaymentLog paymentLog = paymentLogRepository.findTopByMemberIdAndPartyIdOrderByPaymentYmdDesc(participant.getParticipantId(), partyId);
+                String paymentId = paymentLog.getPaymentId();
+                long price = paymentLog.getPrice();
+                int calc = (int) (price * (1-(nowDays/totalDays)));
+                Map<String, Object> refundInfo = paymentService.refund("파티장 파티 탈퇴",paymentId,calc, (int) price);
+                if(findParty.getMatchingType()==2) {
+                    Billing billing = paymentService.getBilling(participant.getParticipantId(), partyId);
+                    paymentService.deleteBilling(billing.getMemberId(),partyId,billing.getCustomerId(),billing.getMerchantId());
+                }
+            }
+
+        }
 
         // 5. 파티원 테이블 삭제
         participantRepository.deleteByParty(findParty);
@@ -304,7 +326,7 @@ public class PartyServiceImpl implements PartyService {
     @Override
     @Transactional
     public PartyDTO isPartyJoin(Long partyId, String memberId) {
-        Party party = Optional.ofNullable(partyRepository.findByPartyId(partyId))
+        Party party = Optional.ofNullable(partyRepository.findLockPartyId(partyId))
                 .orElseThrow(() -> new NoSuchPartyException("등록되지 않았거나 이미 해체된 파티입니다.", NbbangException.NOT_FOUND_PARTY));
         if (party.getPresentHeadcount() < party.getMaxHeadcount()) {
             //파티원 테이블에 파티원 저장
@@ -321,7 +343,7 @@ public class PartyServiceImpl implements PartyService {
     @Override
     @Transactional
     public void isRollBackPartyJoin(Long partyId, String memberId) {
-        Party party = Optional.ofNullable(partyRepository.findByPartyId(partyId))
+        Party party = Optional.ofNullable(partyRepository.findLockPartyId(partyId))
                 .orElseThrow(() -> new NoSuchPartyException("등록되지 않았거나 이미 해체된 파티입니다.", NbbangException.NOT_FOUND_PARTY));
 
         participantRepository.deleteByPartyAndParticipantId(party, memberId);
@@ -394,10 +416,10 @@ public class PartyServiceImpl implements PartyService {
                     paymentService.paymentLogSave(paymentResponse.get("imp_uid").toString(), memberId, partyId, "정기 결제입니다.", price);
 
                     // 정기 결제이기 때문에 다음 결제 스케줄링을 걸어준다.
-                    String merchantId = paymentService.schedulePayment(billingKey, merchantUID, price);
+                    String merchantId = paymentService.schedulePayment(billingKey, merchantUID, price, LocalDateTime.now());
 
                     // 정기 결제 시 사용할 빌링키를 등록한다.
-                    paymentService.saveBilling(memberId, aesUtil.decrypt(billingKey), merchantId, partyId);
+                    paymentService.saveBilling(memberId, aesUtil.decrypt(billingKey), merchantId, partyId, price);
                 }
                 // 결제 실패 한 경우
                 else {
@@ -455,5 +477,39 @@ public class PartyServiceImpl implements PartyService {
         redisUtil.rightPush("matching:"+memberId, String.valueOf(ottId));
 //        redisUtil.setData("billing:" + memberId, billingKey);
         redisUtil.setData("billing:" + memberId, aesUtil.encrypt(billingKey));
+    }
+
+    @Override
+    public List<String> matchingList(String memberId) {
+        long size = redisUtil.getListSize("matching:"+memberId);
+        if(size>0) {
+            return redisUtil.getListRange("matching:"+memberId, 0, size);
+        }
+        return null;
+    }
+
+    @Override
+    @Transactional
+    public void deleteMatchingList(List<String> ottIds, String memberId) {
+        for(String ottId : ottIds) {
+            redisUtil.lRem("matching:"+memberId, 0, ottId);
+        }
+    }
+
+    @Override
+    public void changeBilling(String billingKeyEnc, String memberId) {
+        if(redisUtil.getData("billing:"+memberId) != null) {
+            redisUtil.setData("billing:"+memberId, billingKeyEnc);
+        }
+        List<Billing> billings = billingRepository.findByMemberId(memberId);
+        if(billings.size()==0) {
+            for(Billing billing : billings) {
+                //해당 Billing 테이블로 import 스케쥴 취소 및 테이블 등록일로 재스케쥴 설정
+                String accessToken = importAPI.getAccessToken();
+                importAPI.unSchedule(accessToken,billing.getCustomerId(),billing.getMerchantId());
+                String merchantId = paymentService.schedulePayment(billingKeyEnc,billing.getMerchantId(),(int) billing.getPrice(),billing.getBillingRegYMD().toLocalDateTime());
+                billing.updateBilling(billingKeyEnc, billing.getMemberId(), billing.getPartyId(), merchantId, billing.getStartYMD(), billing.getEndYMD(), billing.getBillingRegYMD());
+            }
+        }
     }
 }

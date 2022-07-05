@@ -6,6 +6,7 @@ import com.dev.nbbang.party.domain.payment.dto.request.PaymentRequest;
 import com.dev.nbbang.party.domain.payment.entity.Billing;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -15,14 +16,14 @@ public interface PaymentService {
     boolean paymentCheck(Map<String, Object> paymentInfo, int partyPrice);
     void paymentLogSave(String paymentId, String memberId, long partyId, String paymentDetail, int price);
     Map<String, Object> autoPayment(String customer_uid, String merchant_uid, int price, String memberId);
-    String schedulePayment(String billingKey, String merchant_uid, int price);
+    String schedulePayment(String billingKey, String merchant_uid, int price, LocalDateTime localDateTime);
     int paymentDiscount(Integer couponId, Integer couponType, Long point, int price, String memberId);
 //    String getBillingKey(String memberId);
     Map<String, Object> refund(String reason, String impUid, int amount, int checksum);
     //결제 이력 조회
     List<PaymentLogDTO> getPaymentLog(String memberId, Pageable pageable);
     //정기 결제 저장
-    void saveBilling(String memberId, String customerId, String merchantId, Long partyId);
+    void saveBilling(String memberId, String customerId, String merchantId, Long partyId, long price);
     //정기 결제 조회
     Billing getBilling(String memberId, Long partyId);
     //정기 결제 삭제

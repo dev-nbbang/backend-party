@@ -104,8 +104,8 @@ public class PaymentController {
             //결제 정보 저장
             paymentService.paymentLogSave(paymentInfo.get("imp_uid").toString(), memberId, partyId, "정기 결제입니다", paymentRequest.getPrice());
             //스케쥴 생성 (포인트랑 쿠폰을 사용했으면 다음 결제부터는 다시 ott가격으롤 예약)
-            String merchantId = paymentService.schedulePayment(paymentRequest.getCustomer_uid(), paymentRequest.getMerchant_uid(), ottPrice);
-            paymentService.saveBilling(memberId,paymentRequest.getCustomer_uid(),merchantId,partyId);
+            String merchantId = paymentService.schedulePayment(paymentRequest.getCustomer_uid(), paymentRequest.getMerchant_uid(), ottPrice, LocalDateTime.now());
+            paymentService.saveBilling(memberId,paymentRequest.getCustomer_uid(),merchantId,partyId, ottPrice);
             return ResponseEntity.ok(CommonResponse.response(true, "결제 성공했습니다"));
         }
 

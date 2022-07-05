@@ -9,6 +9,7 @@ import org.hibernate.annotations.DynamicUpdate;
 import javax.persistence.*;
 import java.sql.Date;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -36,12 +37,16 @@ public class Billing {
     private Date endYMD;
     @Column(name = "MERCHANT_ID", nullable = false)
     private String merchantId;
+    @Column(name = "price", nullable = false)
+    private long price;
 
-    public void updateBilling(String memberId, Long partyId, String merchantId, Date startYMD, Date endYMD) {
+    public void updateBilling(String customerId, String memberId, Long partyId, String merchantId, Date startYMD, Date endYMD, Timestamp billingRegYMD) {
+        this.customerId = customerId;
         this.memberId = memberId;
         this.partyId = partyId;
         this.merchantId = merchantId;
         this.startYMD = startYMD;
         this.endYMD = endYMD;
+        this.billingRegYMD = billingRegYMD;
     }
 }

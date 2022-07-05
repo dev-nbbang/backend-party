@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.sql.Date;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.Map;
 
@@ -63,19 +65,21 @@ public class PaymentHookController {
         Long partyId = Long.parseLong(merchantInfo[1]);
 
         //파티 서비스에서 일일금액, 생성일, 기간을 가지고 만들어진 금액으로 비교
-        int partyPrice = partyService.findPrice(partyId); //메소드가 들어갈 자리
+        Billing billing = paymentService.getBilling(memberId, partyId);
+        int partyPrice = (int) billing.getPrice(); //메소드가 들어갈 자리
         Map<String, Object> paymentInfo = paymentService.getPaymentInfo(memberId, memberId, impUid);
         if(paymentInfo == null)  return ResponseEntity.ok(CommonResponse.response(false, "결제 내역이 없습니다"));
         if(paymentService.paymentCheck(paymentInfo, partyPrice)) {
             //결제 이력 테이블에 결제 정보를 저장해줘야함
             paymentService.paymentLogSave(impUid, memberId, partyId, "일반 결제 입니다.", partyPrice);
             //스케쥴 api 작성
-            Billing billing = paymentService.getBilling(memberId, partyId);
-            String merchantId = paymentService.schedulePayment(billing.getMerchantId(), merchantUid, partyPrice);
+            String merchantId = paymentService.schedulePayment(billing.getCustomerId(), merchantUid, partyPrice, LocalDateTime.now());
             Calendar cal = Calendar.getInstance();
             Date start = (Date) cal.getTime();
             cal.add(Calendar.MONTH, 1);
-            billing.updateBilling(memberId, partyId, merchantId, start, (Date) cal.getTime());
+            LocalDateTime localDateTime = billing.getBillingRegYMD().toLocalDateTime();
+            localDateTime.plusMonths(1);
+            billing.updateBilling(billing.getCustomerId(), memberId, partyId, merchantId, start, (Date) cal.getTime(), Timestamp.valueOf(localDateTime));
             return ResponseEntity.ok(CommonResponse.response(true, "결제 성공했습니다"));
         }
 

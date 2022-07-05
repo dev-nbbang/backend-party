@@ -76,4 +76,10 @@ public interface PartyService {
     void setMatching(long ottId, String billingKey, String memberId);
 
 //    void autoMatching(Party party);
+
+    List<String> matchingList(String memberId);
+
+    void deleteMatchingList(List<String> ottIds, String memberId);
+
+    void changeBilling(String billingKeyEnc, String memberId);
 }
