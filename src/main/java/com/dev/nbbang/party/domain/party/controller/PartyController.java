@@ -11,6 +11,7 @@ import com.dev.nbbang.party.domain.party.service.ParticipantService;
 import com.dev.nbbang.party.domain.party.service.PartyService;
 import com.dev.nbbang.party.global.common.CommonResponse;
 import com.dev.nbbang.party.global.common.CommonSuccessResponse;
+import com.dev.nbbang.party.global.util.AesUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -44,12 +45,6 @@ public class PartyController {
 
         // 파티 생성
         PartyDTO createdParty = partyService.createParty(PartyCreateRequest.toEntity(request, findOtt));
-
-//        // 파티 생성 시 파티원 자동 매칭 시작 (레디스 테이블에 인원이 있는 경우 매칭 시작)
-//        if (partyService.getMatchingSize(MATCHING_REDIS_PREFIX + createdParty.getOtt().getOttId()) > 0) {
-//            partyService.autoMatching(PartyDTO.toEntity(createdParty));
-//        }
-
 
         return ResponseEntity.status(HttpStatus.CREATED).body(CommonSuccessResponse.response(true, PartyCreateResponse.create(createdParty), "파티 생성이 완료되었습니다."));
 
@@ -203,22 +198,16 @@ public class PartyController {
 
     @PostMapping(value = "/join-party")
     public ResponseEntity<?> joinParty(@RequestBody PartyJoinRequest partyJoinRequest, HttpServletRequest req) {
+        log.info("[Party Controller - Join Party] 파티 가입");
         String memberId = req.getHeader("X-Authorization-Id");
-
         //파티 인원수 확인 및 파티 가입 가능시 파티 참가자 추가 불가시 false
-        try {
-            partyService.isPartyJoin(partyJoinRequest.getPartyId(), memberId);
-            return ResponseEntity.ok(CommonResponse.response(true, "파티 가입 성공"));
-        }
-        // 수정
-        catch (Exception e){
-            e.printStackTrace();
-        }
-        return ResponseEntity.ok(CommonResponse.response(false, "파티 가입 실패"));
+        partyService.isPartyJoin(partyJoinRequest.getPartyId(), memberId);
+        return ResponseEntity.ok(CommonResponse.response(true, "파티 가입 성공"));
     }
 
     @PutMapping(value = "/join-party")
     public ResponseEntity<?> rollBackParty(@RequestBody PartyJoinRequest partyJoinRequest, HttpServletRequest req) {
+        log.info("[Party Controller - RollBack Party] 파티 롤백");
         String memberId = req.getHeader("X-Authorization-Id");
         Long partyId = partyJoinRequest.getPartyId();
         partyService.isRollBackPartyJoin(partyId, memberId);
@@ -227,6 +216,7 @@ public class PartyController {
 
     @PostMapping(value = "/matching-apply")
     public ResponseEntity<?> matchingApply(@RequestBody MathcingApplyRequest MathcingApplyRequest, HttpServletRequest req) {
+        log.info("[Party Controller - Matching Apply] 매칭 대기열 저장");
         String memberId = req.getHeader("X-Authorization-Id");
         Long ottId = MathcingApplyRequest.getOttId();
         String billingKey = MathcingApplyRequest.getBillingKey();
@@ -236,6 +226,7 @@ public class PartyController {
 
     @GetMapping(value = "/matching-list")
     public ResponseEntity<?> getMathcingList(HttpServletRequest req) {
+        log.info("[Party Controller - get Matching List] 매칭 대기열 리스트 조회");
         String memberId = req.getHeader("X-Authorization-Id");
         List<String> ottIds = partyService.matchingList(memberId);
         if(ottIds==null) return ResponseEntity.ok(CommonSuccessResponse.response(false, null, "매칭대기열이 없습니다"));
@@ -244,6 +235,7 @@ public class PartyController {
 
     @DeleteMapping(value="/matching-list")
     public ResponseEntity<?> deleteMathcingList(@RequestBody MatchingListRequest matchingListRequest, HttpServletRequest req) {
+        log.info("[Party Controller - Delete Matching List] 매칭 대기열 삭제");
         String memberId = req.getHeader("X-Authorization-Id");
         partyService.deleteMatchingList(matchingListRequest.getOttIds(), memberId);
         return ResponseEntity.ok(CommonResponse.response(true, "매칭 대기열 삭제 완료"));
@@ -251,13 +243,14 @@ public class PartyController {
 
     @PutMapping(value="/billing")
     public ResponseEntity<?> updateBilling(@RequestBody MatchingBillingRequest matchingBillingRequest, HttpServletRequest req) {
+        log.info("[Party Controller - Update Billing] 빌링키 값 수정");
         String memberId = req.getHeader("X-Authorization-Id");
         partyService.changeBilling(matchingBillingRequest.getBillingKey(), memberId);
-        return ResponseEntity.ok(CommonResponse.response(true, "매칭 대기열 삭제 완료"));
+        return ResponseEntity.ok(CommonResponse.response(true, "빌링키 수정 완료"));
     }
 
-    @GetMapping(value = "/test")
-    public ResponseEntity<?> test() {
+    @Scheduled(cron = "0 0 0/1 * * *")
+    public void matchingParty() {
         List<OttDTO> ottDTOList = ottService.findAllOtt();
         for (OttDTO ottDTO : ottDTOList) {
             Ott ott = OttDTO.toEntity(ottDTO);
@@ -269,38 +262,13 @@ public class PartyController {
             if (partyDTOList.size() == 0) continue;
 
             //redis에 해당 ottid list 가져오기
-            long matchSize = partyService.getMatchingSize("matching:" + (long) ott.getOttId());
+            long matchSize = partyService.getMatchingSize(MATCHING_REDIS_PREFIX + (long) ott.getOttId());
 
             //list 사이즈가 0이면 break
             if (matchSize == 0) continue;
 
             //list에 memberId와 rdb에 partyId로 매칭 (파티추가및수정) 여기서 실패하면 다른 rdb꺼 실행
             partyService.matchingParty(partyDTOList, ott, matchSize);
-        }
-
-        return null;
-    }
-
-    @Scheduled(cron = "0 0 0/1 * * *")
-    public void matchingParty() {
-        //ottid 불러오기
-        List<OttDTO> ottDTOList = ottService.findAllOtt();
-        for (int i = 0; i < ottDTOList.size(); i++) {
-            //사이즈만큼 ottid별 현재인원수가 max가 아닌 파티들 불러오기 생성일자 기준 asc
-            Ott ott = OttDTO.toEntity(ottDTOList.get(i));
-            long ottId = ott.getOttId();
-            int maxCount = ott.getOttHeadcount();
-            List<PartyDTO> partyDTOList = partyService.findJoinPartyList(ott, maxCount);
-            //사이즈가 0이면 break
-            if (partyDTOList.size() == 0) break;
-            //redis에 해당 ottid list 가져오기
-            long matchSize = partyService.getMatchingSize("matching:" + ottId);
-            //list 사이즈가 0이면 break
-            if (matchSize == 0) break;
-
-            //list에 memberId와 rdb에 partyId로 매칭 (파티추가및수정) 여기서 실패하면 다른 rdb꺼 실행
-
-            //정기결제 실행 여기서 실패하면 알림으로 실패 사유와 billingkey 수정 요청 및 rollback
         }
     }
 }

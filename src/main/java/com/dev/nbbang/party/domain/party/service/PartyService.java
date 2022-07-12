@@ -49,13 +49,8 @@ public interface PartyService {
 
     // 일주일 매칭 인원 수 (파티원)
 
-    //파티 가격 정보
-    int findPrice(Long partyId);
-
     //Ott 가격 정보
     OttDTO findOttPrice(Long partyId);
-
-    //환불 로직
 
     //파티 가입 (LOCK)
     PartyDTO isPartyJoin(Long partyId, String memberId);
@@ -75,11 +70,12 @@ public interface PartyService {
     //매칭 지원
     void setMatching(long ottId, String billingKey, String memberId);
 
-//    void autoMatching(Party party);
-
+    //자신의 매칭 대기열 반환
     List<String> matchingList(String memberId);
 
+    //자신의 매칭 대기열 삭제
     void deleteMatchingList(List<String> ottIds, String memberId);
 
+    // 결제카드 변경
     void changeBilling(String billingKeyEnc, String memberId);
 }

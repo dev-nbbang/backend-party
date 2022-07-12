@@ -1,9 +1,9 @@
 package com.dev.nbbang.party.domain.payment.service;
 
+import com.dev.nbbang.party.domain.party.dto.PartyDTO;
 import com.dev.nbbang.party.domain.payment.api.service.ImportAPI;
 import com.dev.nbbang.party.domain.payment.api.service.MemberAPI;
 import com.dev.nbbang.party.domain.payment.dto.PaymentLogDTO;
-import com.dev.nbbang.party.domain.payment.dto.request.PaymentRequest;
 import com.dev.nbbang.party.domain.payment.entity.Billing;
 import com.dev.nbbang.party.domain.payment.entity.PaymentLog;
 import com.dev.nbbang.party.domain.payment.repository.BillingRepository;
@@ -11,13 +11,14 @@ import com.dev.nbbang.party.domain.payment.repository.PaymentLogRepository;
 import com.dev.nbbang.party.global.util.AesUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.json.JSONObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Service
@@ -48,9 +49,9 @@ public class PaymentServiceImpl implements PaymentService{
 
     @Override
     @Transactional
-    public void paymentLogSave(String paymentId, String memberId, long partyId, String paymentDetail, int price) {
+    public void paymentLogSave(String paymentId, String memberId, long partyId, String paymentDetail, int price, int paymentType) {
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-        paymentLogRepository.save(PaymentLog.builder().paymentId(paymentId).memberId(memberId).partyId(partyId).paymentDetail(paymentDetail).paymentYmd(timestamp).price(price).paymentType(0).build());
+        paymentLogRepository.save(PaymentLog.builder().paymentId(paymentId).memberId(memberId).partyId(partyId).paymentDetail(paymentDetail).paymentYmd(timestamp).price(price).paymentType(paymentType).build());
     }
 
     @Override
@@ -61,8 +62,7 @@ public class PaymentServiceImpl implements PaymentService{
         if(memberId.equals(merchantInfo[0])) {
             String accessToken = importAPI.getAccessToken();
             Map<String, Object> paymentInfo = importAPI.Payment(accessToken,
-                    aesUtil.decrypt(customer_uid),merchantUid, price, "월간 이용권 정기결제");
-            log.info("autoPaymentService" + String.valueOf(paymentInfo));
+                    aesUtil.decrypt(customer_uid), merchantUid, price, "월간 이용권 정기결제");
             if(paymentInfo.get("status").equals("paid")) return paymentInfo;
         }
         return null;
@@ -70,9 +70,9 @@ public class PaymentServiceImpl implements PaymentService{
 
     @Override
     public String schedulePayment(String billingKey, String merchant_uid, int price, LocalDateTime localDateTime) {
-        String accessToken = importAPI.getAccessToken();
         String[] merchantInfo = merchant_uid.split("-");
         StringBuilder sb = new StringBuilder(merchantInfo[0] + "-" + merchantInfo[1] + "-" + importAPI.randomString());
+        String accessToken = importAPI.getAccessToken();
         importAPI.Schedule(accessToken, aesUtil.decrypt(billingKey), sb.toString(), price, "월간 이용권 정기결제", localDateTime);
         return sb.toString();
     }
@@ -83,12 +83,10 @@ public class PaymentServiceImpl implements PaymentService{
         int calc = price;
         if(couponType!=null) {
             calc = (int)(calc * (1-(couponType/100.0)));
-            log.info("coupon : " + calc);
             status+=1;
         }
         if(point!=null) {
             calc = (int)(calc-point);
-            log.info("point : " + calc);
             status+=2;
         }
         if(status!=0) {
@@ -99,11 +97,6 @@ public class PaymentServiceImpl implements PaymentService{
         }
         return calc;
     }
-
-//    @Override
-//    public String getBillingKey(String memberId) {
-//        return memberAPI.getBillingKey(memberId);
-//    }
 
     @Override
     public Map<String, Object> refund(String reason, String impUid, int amount, int checksum) {
@@ -138,6 +131,17 @@ public class PaymentServiceImpl implements PaymentService{
         String accessToken = importAPI.getAccessToken();
         importAPI.unSchedule(accessToken,aesUtil.decrypt(customerId),merchantId);
         billingRepository.deleteByMemberIdAndPartyId(memberId, partyId);
+    }
+
+    @Override
+    public int normalDayPrice(PartyDTO partyDTO) {
+        LocalDateTime endDate = partyDTO.getRegYmd();
+        endDate.plusDays(partyDTO.getPeriod());
+        LocalDateTime nowDate = LocalDateTime.now();
+        LocalDate end = LocalDate.from(endDate);
+        LocalDate now = LocalDate.from(nowDate);
+        long days = ChronoUnit.DAYS.between(now, end);
+        return (int)(partyDTO.getPrice() * days);
     }
 
 

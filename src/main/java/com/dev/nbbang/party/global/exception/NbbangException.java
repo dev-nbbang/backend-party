@@ -10,6 +10,7 @@ public enum NbbangException {
     NO_CREATE_PARTICIPANT("BE007", "Doesn't Create Participant"),
     NOT_FOUND_PARTICIPANT("BE008", "Not Found Participant"),
     ALREADY_JOIN_PARTY("BE009", "Already Join Party"),
+    NO_JOIN_PARTY("BE010", "FULL Party"),
     NOT_FOUND_OTT("BE101", "Not Found Ott Platform"),
     NO_CREATE_OTT("BE102", "Doesn't Create Ott Platform"),
     FAIL_TO_DELETE_OTT("BE103", "Fail To Delete OTT"),

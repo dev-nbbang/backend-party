@@ -13,7 +13,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -33,6 +32,7 @@ public class ImportAPI {
     private String refundUrl = "https://api.iamport.kr/payments/cancel";
     private String unScheduleUrl = "https://api.iamport.kr/subscribe/payments/unschedule";
 
+    //아임포트 토큰 값 반환
     public String getAccessToken() {
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_JSON);
@@ -56,6 +56,7 @@ public class ImportAPI {
         throw new FailImportServerException("server 접근 실패", NbbangException.FAIL_TO_IMPORT_SERVER);
     }
 
+    // 아임포트 결제번호로 결제 정보 반환
     public Map<String, Object> getPaymentInfo(String accessToken, String imp_uid) {
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.add("Authorization", accessToken);
@@ -75,19 +76,17 @@ public class ImportAPI {
         throw new FailImportServerException("server 접근 실패", NbbangException.FAIL_TO_IMPORT_SERVER);
     }
 
+    //정기 결제
     public Map<String, Object> Payment(String accessToken, String billingKey, String merchant_uid, int price, String name) {
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_JSON);
         httpHeaders.add("Authorization", accessToken);
-        log.info(accessToken);
 
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("customer_uid", billingKey);
         jsonObject.put("merchant_uid", merchant_uid);
         jsonObject.put("amount", price);
         jsonObject.put("name", name);
-
-        log.info(String.valueOf(jsonObject));
 
         HttpEntity<String> impRequest = new HttpEntity<>(jsonObject.toString(), httpHeaders);
 
@@ -96,7 +95,6 @@ public class ImportAPI {
             if(impResponse.getStatusCode() == HttpStatus.OK) {
                 ObjectMapper mapper = new ObjectMapper();
                 Map<String, Object> map = mapper.readValue(impResponse.getBody(), Map.class);
-                log.info(String.valueOf(map));
                 if(!map.get("code").toString().equals("0")) throw new FailImportServerException("errorCode: " + map.get("code").toString() + "결제 실패", NbbangException.FAIL_TO_IMPORT_SERVER);
                 return (Map<String, Object>) map.get("response");
             }
@@ -106,21 +104,15 @@ public class ImportAPI {
         throw new FailImportServerException("server 접근 실패", NbbangException.FAIL_TO_IMPORT_SERVER);
     }
 
+    //다음 결제 스케쥴
     public void Schedule(String accessToken, String billingKey, String merchant_uid, int price, String name, LocalDateTime localDateTime) {
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_JSON);
         httpHeaders.add("Authorization", accessToken);
         Timestamp timestamp = Timestamp.valueOf(localDateTime);
-//        Calendar c = Calendar.getInstance();
         long now = timestamp.getTime();
-        localDateTime.plusMonths(1);
-        timestamp = Timestamp.valueOf(localDateTime);
-//        c.add(Calendar.MONTH, 1);
+        timestamp = Timestamp.valueOf(localDateTime.plusMonths(1));
         long schedule_at = (now / 1000) + ((timestamp.getTime()-now)/1000);
-//        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-
-//        String[] merchantInfo = merchant_uid.split("-");
-//        StringBuilder sb = new StringBuilder(merchantInfo[0] + "-" + merchantInfo[1] + "-" + sdf.format(c.getTime()) + "" + randomString());
         List<JSONObject> list = new ArrayList<>();
 
         JSONObject jsonObject = new JSONObject();
@@ -133,8 +125,6 @@ public class ImportAPI {
         list.add(schedule);
         jsonObject.put("schedules", list);
 
-        log.info(String.valueOf(jsonObject));
-
         HttpEntity<String> impRequest = new HttpEntity<>(jsonObject.toString(), httpHeaders);
 
         try {
@@ -142,7 +132,6 @@ public class ImportAPI {
             if(impResponse.getStatusCode() == HttpStatus.OK) {
                 ObjectMapper mapper = new ObjectMapper();
                 Map<String, Object> map = mapper.readValue(impResponse.getBody(), Map.class);
-                log.info(String.valueOf(map));
                 if(!map.get("code").toString().equals("0")) throw new FailImportServerException("errorCode: " + map.get("code").toString() + "예약 실패", NbbangException.FAIL_TO_IMPORT_SERVER);
                 return;
             }
@@ -152,6 +141,7 @@ public class ImportAPI {
         throw new FailImportServerException("server 접근 실패", NbbangException.FAIL_TO_IMPORT_SERVER);
     }
 
+    // 해당 결제 환불
     public Map<String, Object> Refund(String accessToken, String reason, String imp_uid, int amount, int cancelableAmount) {
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_JSON);
@@ -170,7 +160,6 @@ public class ImportAPI {
             if(impResponse.getStatusCode() == HttpStatus.OK) {
                 ObjectMapper mapper = new ObjectMapper();
                 Map<String, Object> map = mapper.readValue(impResponse.getBody(), Map.class);
-                log.info(String.valueOf(map));
                 if(!map.get("code").toString().equals("0")) throw new FailImportServerException("errorCode: " + map.get("code").toString() + "결제 실패", NbbangException.FAIL_TO_IMPORT_SERVER);
                 return (Map<String, Object>) map.get("response");
             }
@@ -180,6 +169,7 @@ public class ImportAPI {
         throw new FailImportServerException("server 접근 실패", NbbangException.FAIL_TO_IMPORT_SERVER);
     }
 
+    //스케쥴 취소
     public void unSchedule(String accessToken, String customerId, String merchantId) {
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_JSON);
@@ -198,7 +188,6 @@ public class ImportAPI {
             if(impResponse.getStatusCode() == HttpStatus.OK) {
                 ObjectMapper mapper = new ObjectMapper();
                 Map<String, Object> map = mapper.readValue(impResponse.getBody(), Map.class);
-                log.info(String.valueOf(map));
                 if(!map.get("code").toString().equals("0")) throw new FailImportServerException("errorCode: " + map.get("code").toString() + "예약 취소 실패", NbbangException.FAIL_TO_IMPORT_SERVER);
                 return;
             }
@@ -208,6 +197,7 @@ public class ImportAPI {
         throw new FailImportServerException("server 접근 실패", NbbangException.FAIL_TO_IMPORT_SERVER);
     }
 
+    //결제 번호를 위한 랜덤 문자열
     public String randomString() {
         Random random = new Random();
         return random.ints(48, 123).filter(i -> (i<=57 || i>= 65) && (i<=90 || i>=97))

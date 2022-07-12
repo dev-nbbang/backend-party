@@ -3,8 +3,6 @@ package com.dev.nbbang.party.domain.party.service;
 import com.dev.nbbang.party.domain.ott.dto.OttDTO;
 import com.dev.nbbang.party.domain.ott.entity.Ott;
 import com.dev.nbbang.party.domain.party.dto.PartyDTO;
-import com.dev.nbbang.party.domain.party.dto.request.MatchingRequest;
-import com.dev.nbbang.party.domain.party.dto.response.MatchingInfoResponse;
 import com.dev.nbbang.party.domain.party.entity.NoticeType;
 import com.dev.nbbang.party.domain.party.entity.Participant;
 import com.dev.nbbang.party.domain.party.entity.Party;
@@ -12,7 +10,6 @@ import com.dev.nbbang.party.domain.party.exception.*;
 import com.dev.nbbang.party.domain.party.repository.ParticipantRepository;
 import com.dev.nbbang.party.domain.party.repository.PartyRepository;
 import com.dev.nbbang.party.domain.payment.api.service.ImportAPI;
-import com.dev.nbbang.party.domain.payment.api.service.MemberAPI;
 import com.dev.nbbang.party.domain.payment.entity.Billing;
 import com.dev.nbbang.party.domain.payment.entity.PaymentLog;
 import com.dev.nbbang.party.domain.payment.repository.BillingRepository;
@@ -21,7 +18,6 @@ import com.dev.nbbang.party.domain.payment.service.PaymentService;
 import com.dev.nbbang.party.domain.qna.entity.Qna;
 import com.dev.nbbang.party.domain.qna.exception.FailDeleteQnaException;
 import com.dev.nbbang.party.domain.qna.repository.QnaRepository;
-import com.dev.nbbang.party.global.common.CommonResponse;
 import com.dev.nbbang.party.global.common.NotifyRequest;
 import com.dev.nbbang.party.global.exception.NbbangException;
 import com.dev.nbbang.party.global.service.NotifyProducer;
@@ -30,18 +26,11 @@ import com.dev.nbbang.party.global.util.RedisUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.util.codec.binary.Base64;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -59,12 +48,12 @@ public class PartyServiceImpl implements PartyService {
     private final RedisUtil redisUtil;
     private final PaymentService paymentService;
     private final AesUtil aesUtil;
-    private final MatchingProducer matchingProducer; // NotifyProducer로 대체
     private final NotifyProducer notifyProducer;
     private final BillingRepository billingRepository;
 
 
     private final String MATCHING_KEY_PREFIX = "matching:";
+    private final String BILLING_KEY_PREFIX = "billing:";
 
     /**
      * 파티장이 새로운 파티를 생성한다. (암호화)
@@ -129,11 +118,12 @@ public class PartyServiceImpl implements PartyService {
             if(!participant.getParticipantId().equals(leaderId)) {
                 long totalDays = Duration.between(partyDateTime, participant.getParticipantYmd()).toDays();
                 long nowDays = Duration.between(partyDateTime, LocalDateTime.now()).toDays();
-                PaymentLog paymentLog = paymentLogRepository.findTopByMemberIdAndPartyIdOrderByPaymentYmdDesc(participant.getParticipantId(), partyId);
+                PaymentLog paymentLog = paymentLogRepository.findTopByMemberIdAndPartyIdAndPaymentTypeOrderByPaymentYmdDesc(participant.getParticipantId(), partyId, 0);
                 String paymentId = paymentLog.getPaymentId();
                 long price = paymentLog.getPrice();
                 int calc = (int) (price * (1-(nowDays/totalDays)));
                 Map<String, Object> refundInfo = paymentService.refund("파티장 파티 탈퇴",paymentId,calc, (int) price);
+                paymentService.paymentLogSave(paymentId, participant.getParticipantId(), partyId, "파티장 탈퇴로 환불 되었습니다.", calc, 1);
                 if(findParty.getMatchingType()==2) {
                     Billing billing = paymentService.getBilling(participant.getParticipantId(), partyId);
                     paymentService.deleteBilling(billing.getMemberId(),partyId,billing.getCustomerId(),billing.getMerchantId());
@@ -309,15 +299,6 @@ public class PartyServiceImpl implements PartyService {
     }
 
     @Override
-    public int findPrice(Long partyId) {
-        PartyDTO partyDTO = findPartyByPartyId(partyId);
-        Long dayPrice = partyDTO.getPrice();
-        LocalDateTime finalDay = partyDTO.getRegYmd().plusDays(partyDTO.getPeriod());
-        long days = Duration.between(finalDay, LocalDateTime.now()).toDays();
-        return (int) (days * dayPrice);
-    }
-
-    @Override
     public OttDTO findOttPrice(Long partyId) {
         PartyDTO partyDTO = findPartyByPartyId(partyId);
         return OttDTO.create(partyDTO.getOtt());
@@ -336,8 +317,7 @@ public class PartyServiceImpl implements PartyService {
             return PartyDTO.create(party);
         }
 
-        // 바꾸기
-        throw new NoCreateParticipantException("예외명 바꾸기", NbbangException.NOT_FOUND_OTT);
+        throw new NoJoinPartyException("인원이 최대인 파티입니다", NbbangException.NO_JOIN_PARTY);
     }
 
     @Override
@@ -356,22 +336,7 @@ public class PartyServiceImpl implements PartyService {
         List<Party> partyList = partyRepository.findAllByOttAndPresentHeadcountLessThanAndMatchingTypeOrderByRegYmd(ott, maxHeadCount, 2);
         List<PartyDTO> response = new ArrayList<>();
         for (Party party : partyList) {
-            response.add(PartyDTO.builder()
-                    .partyId(party.getPartyId())
-                    .ott(party.getOtt())
-                    .leaderId(party.getLeaderId())
-                    .presentHeadcount(party.getPresentHeadcount())
-                    .maxHeadcount(party.getMaxHeadcount())
-                    .regYmd(party.getRegYmd())
-                    .ottAccId(party.getOttAccId())
-                    .ottAccPw(party.getOttAccPw())
-                    .matchingType(party.getMatchingType())
-                    .title(party.getTitle())
-                    .partyDetail(party.getPartyDetail())
-                    .price(party.getPrice())
-                    .period(party.getPeriod())
-                    .partyNotice(party.getPartyNotice())
-                    .build());
+            response.add(PartyDTO.create(party));
         }
         return response;
     }
@@ -403,7 +368,7 @@ public class PartyServiceImpl implements PartyService {
                 String notifyDetail = "매칭이 성공되었습니다.\n 마이페이지에서 파티를 확인해보세요";
                 Long notifyTypeId = partyId;
 
-                final String billingKey = redisUtil.getData("billing:" + memberId);
+                final String billingKey = redisUtil.getData(BILLING_KEY_PREFIX + memberId);
                 final String merchantUID = memberId + "-" + partyId + "-" + importAPI.randomString();
                 final int price = (int) (ott.getOttPrice() / ott.getOttHeadcount());
 
@@ -413,7 +378,7 @@ public class PartyServiceImpl implements PartyService {
                 // 결제 성공 시
                 if (paymentResponse != null) {
                     // 결제 이력을 넣어준다.
-                    paymentService.paymentLogSave(paymentResponse.get("imp_uid").toString(), memberId, partyId, "정기 결제입니다.", price);
+                    paymentService.paymentLogSave(paymentResponse.get("imp_uid").toString(), memberId, partyId, "정기 결제입니다.", price, 0);
 
                     // 정기 결제이기 때문에 다음 결제 스케줄링을 걸어준다.
                     String merchantId = paymentService.schedulePayment(billingKey, merchantUID, price, LocalDateTime.now());
@@ -432,13 +397,6 @@ public class PartyServiceImpl implements PartyService {
 
                 // 알림 전송
                 try {
-//                    matchingProducer.sendNotify(MatchingRequest.builder()
-//                            .notifySender("manager")
-//                            .notifyReceiver(memberId)
-//                            .notifyDetail(notifyDetail)
-//                            .notifyType(notifyType)
-//                            .notifyTypeId(notifyTypeId)
-//                            .build());
                     notifyProducer.sendNotify(NotifyRequest.create("manager", memberId, notifyDetail, notifyType, notifyTypeId));
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();
@@ -449,10 +407,10 @@ public class PartyServiceImpl implements PartyService {
                     partyQueue.add(joinParty);
 
                 //개인 매칭 열 확인 후 삭제
-                redisUtil.lRem("matching:"+memberId, 0, String.valueOf(ott.getOttId()));
-                if(redisUtil.getListSize("matching:"+memberId)==0) {
-                    redisUtil.deleteList("matching:"+memberId);
-                    redisUtil.deleteData("billing:"+memberId);
+                redisUtil.lRem(MATCHING_KEY_PREFIX+memberId, 0, String.valueOf(ott.getOttId()));
+                if(redisUtil.getListSize(MATCHING_KEY_PREFIX+memberId)==0) {
+                    redisUtil.deleteList(MATCHING_KEY_PREFIX+memberId);
+                    redisUtil.deleteData(BILLING_KEY_PREFIX+memberId);
                 }
 
                 // 다음 사람 매칭
@@ -473,17 +431,16 @@ public class PartyServiceImpl implements PartyService {
 
     @Override
     public void setMatching(long ottId, String billingKey, String memberId) {
-        redisUtil.rightPush("matching:" + ottId, memberId);
-        redisUtil.rightPush("matching:"+memberId, String.valueOf(ottId));
-//        redisUtil.setData("billing:" + memberId, billingKey);
-        redisUtil.setData("billing:" + memberId, aesUtil.encrypt(billingKey));
+        redisUtil.rightPush(MATCHING_KEY_PREFIX + ottId, memberId);
+        redisUtil.rightPush(MATCHING_KEY_PREFIX+memberId, String.valueOf(ottId));
+        redisUtil.setData(BILLING_KEY_PREFIX + memberId, billingKey);
     }
 
     @Override
     public List<String> matchingList(String memberId) {
-        long size = redisUtil.getListSize("matching:"+memberId);
+        long size = redisUtil.getListSize(MATCHING_KEY_PREFIX+memberId);
         if(size>0) {
-            return redisUtil.getListRange("matching:"+memberId, 0, size);
+            return redisUtil.getListRange(MATCHING_KEY_PREFIX+memberId, 0, size);
         }
         return null;
     }
@@ -492,14 +449,14 @@ public class PartyServiceImpl implements PartyService {
     @Transactional
     public void deleteMatchingList(List<String> ottIds, String memberId) {
         for(String ottId : ottIds) {
-            redisUtil.lRem("matching:"+memberId, 0, ottId);
+            redisUtil.lRem(MATCHING_KEY_PREFIX+memberId, 0, ottId);
         }
     }
 
     @Override
     public void changeBilling(String billingKeyEnc, String memberId) {
-        if(redisUtil.getData("billing:"+memberId) != null) {
-            redisUtil.setData("billing:"+memberId, billingKeyEnc);
+        if(redisUtil.getData(BILLING_KEY_PREFIX+memberId) != null) {
+            redisUtil.setData(BILLING_KEY_PREFIX+memberId, billingKeyEnc);
         }
         List<Billing> billings = billingRepository.findByMemberId(memberId);
         if(billings.size()==0) {
