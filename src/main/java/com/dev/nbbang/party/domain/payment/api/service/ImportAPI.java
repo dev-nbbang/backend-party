@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -20,17 +22,25 @@ import java.util.*;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@RefreshScope
 public class ImportAPI {
     private final RestTemplate restTemplate;
-
-    private String paymentUrl = "https://api.iamport.kr/payments";
-    private String billingPaymentUrl = "https://api.iamport.kr/subscribe/payments/again";
-    private String scheduleUrl = "https://api.iamport.kr/subscribe/payments/schedule";
-    private String impTokenUrl="https://api.iamport.kr/users/getToken";
-    private String impKey="4738003304274604";
-    private String impSecret="15dcccbe238c258980c02f4b4fd7d10060887cd418bc0ad086f36873856b7746c62d7739eef780d1";
-    private String refundUrl = "https://api.iamport.kr/payments/cancel";
-    private String unScheduleUrl = "https://api.iamport.kr/subscribe/payments/unschedule";
+    @Value("${imp.client.key}")
+    private String impKey;
+    @Value("${imp.client.secret}")
+    private String impSecret;
+    @Value("${imp.payment.url}")
+    private String paymentUrl;
+    @Value("${imp.billing-payment.url}")
+    private String billingPaymentUrl;
+    @Value("${imp.schedule.url}")
+    private String scheduleUrl;
+    @Value("${imp.imptoken.url}")
+    private String impTokenUrl;
+    @Value("${imp.refund.url}")
+    private String refundUrl;
+    @Value("${imp.unschedule.url}")
+    private String unScheduleUrl;
 
     //아임포트 토큰 값 반환
     public String getAccessToken() {

@@ -3,6 +3,7 @@ package com.dev.nbbang.party.global.util;
 import lombok.RequiredArgsConstructor;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.Cipher;
@@ -12,6 +13,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 @Component
 @RequiredArgsConstructor
+@RefreshScope
 public class AesUtil {
     @Value("${aes.key}")
     private String key;
