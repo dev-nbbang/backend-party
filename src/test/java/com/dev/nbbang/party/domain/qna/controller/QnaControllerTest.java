@@ -61,11 +61,6 @@ class QnaControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @BeforeEach
-    void setUp() {
-        this.mvc = MockMvcBuilders.standaloneSetup(new QnaController(this.qnaService, this.partyService)).setControllerAdvice(NbbangExceptionHandler.class).build();
-    }
-
     @Test
     @DisplayName("Qna 컨트롤러 : 파티 문의 생성 성공")
     void 파티_문의_생성_성공() throws Exception {

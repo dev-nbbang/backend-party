@@ -17,6 +17,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 @RequestMapping(value = "/ott")
+@CrossOrigin
 public class OttController {
     private final OttService ottService;
 
