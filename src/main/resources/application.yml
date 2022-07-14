@@ -1,32 +1,32 @@
 spring:
   application:
-    name: nbbang-party
+    name: nbbang-party, common     # common 공통 프로퍼티 불러오기
   profiles:
-    active: local
-  jpa:
-    hibernate:
-      ddl-auto: none
-      naming:
-        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
-    database-platform: mysql
-    properties:
-      hibernate:
-        format_sql: true
-        dialect: org.hibernate.dialect.MySQL5InnoDBDialect
-        storage_engine: innodb
-  datasource:
-    driver-class-name: com.mysql.jdbc.Driver
-    url: jdbc:mysql://129.154.222.27:3306/nbbang_party?useSSL=false&useUnicode=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
-    username: root
+    active: prod
+  config:
+    import: optional:configserver:http://129.154.222.27:8197
+  rabbitmq:
+    host: 129.154.222.27
+    port: 5672
+    username: nbbang
     password: nbbang-dev!@#
+  main:
+    allow-bean-definition-overriding: true
 server:
   port: 9200
-## hibernate log (공통)
-logging:
-  level:
-    org:
-      hibernate:
-        SQL: debug
-        type:
-          descriptor:
-            sql: trace
+  servlet:
+    context-path: /nbbang-party
+
+# acutator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: busrefresh
+
+# 키스토어 복호화
+encrypt:
+  key-store:
+    location: file:///home/ubuntu/nbbang/key/nbbang-config.jks
+    password: config-access
+    alias: nbbang-config-key

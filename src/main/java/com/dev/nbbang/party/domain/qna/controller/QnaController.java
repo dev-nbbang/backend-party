@@ -7,11 +7,14 @@ import com.dev.nbbang.party.domain.qna.dto.request.AnswerRequest;
 import com.dev.nbbang.party.domain.qna.dto.request.QuestionCreateRequest;
 import com.dev.nbbang.party.domain.qna.dto.request.QuestionModifyRequest;
 import com.dev.nbbang.party.domain.qna.dto.response.QnaInformationResponse;
-import com.dev.nbbang.party.domain.qna.dto.response.QuestionInformationResponse;
 import com.dev.nbbang.party.domain.qna.dto.response.QnaListResponse;
+import com.dev.nbbang.party.domain.qna.dto.response.QuestionInformationResponse;
 import com.dev.nbbang.party.domain.qna.entity.AnswerType;
 import com.dev.nbbang.party.domain.qna.service.QnaService;
 import com.dev.nbbang.party.global.common.CommonSuccessResponse;
+import com.dev.nbbang.party.global.common.NotifyRequest;
+import com.dev.nbbang.party.global.service.NotifyProducer;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -28,9 +31,10 @@ import java.util.List;
 public class QnaController {
     private final QnaService qnaService;
     private final PartyService partyService;
+    private final NotifyProducer notifyProducer;
 
     @PostMapping(value = "/new")
-    public ResponseEntity<?> createQuestion(@RequestBody QuestionCreateRequest request, HttpServletRequest servletRequest) {
+    public ResponseEntity<?> createQuestion(@RequestBody QuestionCreateRequest request, HttpServletRequest servletRequest) throws JsonProcessingException {
         log.info("[Qna Controller - Create Question] 문의 등록");
 
         // requestBody로 받지만 혹시 여기서 사용하는게 좋은지 판단 필요
@@ -41,6 +45,11 @@ public class QnaController {
 
         // 문의 등록
         QnaDTO savedQuestion = qnaService.createQuestion(QuestionCreateRequest.toEntity(request, findParty));
+
+        // 문의 등록 후 알림 메세지 전송 (QNA 문의 번호를 주는게 맞지?)
+        notifyProducer.sendNotify(
+                NotifyRequest.create(request.getQnaSender(), findParty.getLeaderId(), findParty.getOtt().getOttName() + "파티의 문의가 등록되었습니다.", "QNA", savedQuestion.getQnaId())
+        );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(CommonSuccessResponse.response(true, QuestionInformationResponse.create(savedQuestion), "성공적으로 문의를 등록했습니다."));
 
@@ -81,11 +90,22 @@ public class QnaController {
     }
 
     @PutMapping(value = "/{qnaId}/answer/{answerType}")
-    public ResponseEntity<?> manageAnswer(@PathVariable(name = "qnaId") Long qnaId, @PathVariable(name = "answerType") AnswerType answerType, @RequestBody AnswerRequest request) {
+    public ResponseEntity<?> manageAnswer(@PathVariable(name = "qnaId") Long qnaId, @PathVariable(name = "answerType") AnswerType answerType,
+                                          @RequestBody AnswerRequest request, HttpServletRequest servletRequest) throws JsonProcessingException {
         log.info("[Qna Controller - Manage Question] 문의 관리 (답변 등록, 삭제 , 수정)");
+
+        // 파티장 아이디 가져오기
+        String memberId = servletRequest.getHeader("X-Authorization-Id");
 
         // 파티장이 문의 내역 답변 관리
         QnaDTO manageAnswer = qnaService.manageAnswer(qnaId, request.getAnswerDetail(), answerType);
+
+        // 파티장이 문의 답변 한 경우
+        if(answerType == AnswerType.NEW)  {
+            notifyProducer.sendNotify(
+                    NotifyRequest.create(memberId, manageAnswer.getQnaSender(), "문의에 대한 답변이 등록되었습니다.", "QNA", manageAnswer.getQnaId())
+            );
+        }
 
         String responseMessage = "답변 등록 및 수정에 성공했습니다.";
         if (answerType == AnswerType.DELETE) responseMessage = "답변 삭제에 성공했습니다.";

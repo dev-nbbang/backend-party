@@ -1,7 +1,6 @@
 package com.dev.nbbang.party.domain.party.util;
 
 import com.dev.nbbang.party.domain.party.entity.NoticeType;
-import com.dev.nbbang.party.domain.qna.entity.AnswerType;
 import org.springframework.core.convert.converter.Converter;
 
 import java.util.Locale;

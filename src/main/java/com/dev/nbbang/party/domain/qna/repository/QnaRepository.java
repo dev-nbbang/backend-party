@@ -4,6 +4,7 @@ import com.dev.nbbang.party.domain.party.entity.Party;
 import com.dev.nbbang.party.domain.qna.entity.Qna;
 import com.dev.nbbang.party.domain.qna.entity.QnaStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -33,4 +34,9 @@ public interface QnaRepository extends JpaRepository<Qna, Long> {
 
     // 파티 해체시 파티 아이디 질문 리스트 삭제 검증
     List<Qna> findAllByParty(Party party);
+
+    // 회원 탈퇴 시 자신이 작성한 QNA 전체 삭제
+    void deleteAllByQnaSender(String memberId);
+
+    // 파티 탈퇴 시 해당 파티에 자신이 작성한 QNA 전체 삭제
 }

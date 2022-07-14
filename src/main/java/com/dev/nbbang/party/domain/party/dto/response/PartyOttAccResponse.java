@@ -19,11 +19,11 @@ public class PartyOttAccResponse {
         this.ottAccPw = ottAccPw;
     }
 
-    public static PartyOttAccResponse create(PartyDTO party) {
+    public static PartyOttAccResponse create(PartyDTO party, String ottAccPw) {
         return PartyOttAccResponse.builder()
                 .partyId(party.getPartyId())
                 .ottAccId(party.getOttAccId())
-                .ottAccPw(party.getOttAccPw())
+                .ottAccPw(ottAccPw)
                 .build();
     }
 }

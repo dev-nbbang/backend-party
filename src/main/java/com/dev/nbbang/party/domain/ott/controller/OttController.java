@@ -5,7 +5,6 @@ import com.dev.nbbang.party.domain.ott.dto.request.OttInformationRequest;
 import com.dev.nbbang.party.domain.ott.dto.response.OttInformationResponse;
 import com.dev.nbbang.party.domain.ott.service.OttService;
 import com.dev.nbbang.party.global.common.CommonSuccessResponse;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

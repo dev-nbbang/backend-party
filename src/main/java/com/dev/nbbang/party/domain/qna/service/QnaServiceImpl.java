@@ -12,6 +12,7 @@ import com.dev.nbbang.party.domain.qna.exception.NoCreateQnaException;
 import com.dev.nbbang.party.domain.qna.exception.NoSuchQnaException;
 import com.dev.nbbang.party.domain.qna.repository.QnaRepository;
 import com.dev.nbbang.party.global.exception.NbbangException;
+import com.dev.nbbang.party.global.service.NotifyProducer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

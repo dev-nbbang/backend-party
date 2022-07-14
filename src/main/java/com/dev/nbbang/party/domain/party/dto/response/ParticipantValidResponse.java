@@ -1,6 +1,5 @@
 package com.dev.nbbang.party.domain.party.dto.response;
 
-import com.dev.nbbang.party.domain.party.dto.request.ParticipantValidRequest;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

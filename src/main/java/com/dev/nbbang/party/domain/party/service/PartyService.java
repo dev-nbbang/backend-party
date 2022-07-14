@@ -1,11 +1,13 @@
 package com.dev.nbbang.party.domain.party.service;
 
+import com.dev.nbbang.party.domain.ott.dto.OttDTO;
 import com.dev.nbbang.party.domain.ott.entity.Ott;
 import com.dev.nbbang.party.domain.party.dto.PartyDTO;
 import com.dev.nbbang.party.domain.party.entity.NoticeType;
 import com.dev.nbbang.party.domain.party.entity.Party;
 
 import java.util.List;
+import java.util.Map;
 
 public interface PartyService {
     // 파티 생성
@@ -47,4 +49,38 @@ public interface PartyService {
 
     // 일주일 매칭 인원 수 (파티원)
 
+    //Ott 가격 정보
+    OttDTO findOttPrice(Long partyId);
+
+    //파티 가입 (LOCK)
+    PartyDTO isPartyJoin(Long partyId, String memberId);
+
+    //파티 롤백 (LOCK)
+    void isRollBackPartyJoin(Long partyId, String memberId);
+
+    //현재인원수가 max가 아닌 파티들 불러오기 생성일자 기준 asc
+    List<PartyDTO> findJoinPartyList(Ott ott, int maxHeadCount);
+
+    //매칭 대기열 사이즈
+    long getMatchingSize(String key);
+
+    //파티와 사용자 매칭
+    void matchingParty(List<PartyDTO> partyDTOList, Ott ott, long size);
+
+    //매칭 지원
+    void setMatching(long ottId, String billingKey, String memberId);
+
+    //자신의 매칭 대기열 반환
+    List<String> matchingList(String memberId);
+
+    //자신의 매칭 대기열 삭제
+    void deleteMatchingList(List<String> ottIds, String memberId);
+
+    // 결제카드 변경
+    void changeBilling(String billingKeyEnc, String memberId);
+
+    // 암호화
+    String aesEncoder(String plain);
+    // 암호화
+    String aesDecoder(String encText);
 }

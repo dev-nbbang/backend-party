@@ -5,9 +5,13 @@ import com.dev.nbbang.party.domain.party.entity.Party;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import javax.persistence.LockModeType;
+import java.util.List;
 
 @Repository
 public interface PartyRepository extends JpaRepository<Party, Long> {
@@ -16,6 +20,10 @@ public interface PartyRepository extends JpaRepository<Party, Long> {
 
     // 파티 아이디로 파티 정보 조회
     Party findByPartyId(Long partyId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Party p WHERE p.partyId = :partyId")
+    Party findLockPartyId(Long partyId);
 
     // 파티 삭제
     void deleteByPartyId(Long partyId);
@@ -30,5 +38,8 @@ public interface PartyRepository extends JpaRepository<Party, Long> {
 
     // OTT 계정 중복 확인
     Party findByOttAndOttAccId(Ott ott, String ottAccId);
+
+    //현재인원수가 max가 아닌 파티들 불러오기 생성일자 기준 asc
+    List<Party> findAllByOttAndPresentHeadcountLessThanAndMatchingTypeOrderByRegYmd(Ott ott, int maxHeadCount, int matchingType);
 
 }
