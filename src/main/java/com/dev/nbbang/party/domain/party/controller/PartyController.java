@@ -189,7 +189,7 @@ public class PartyController {
         return ResponseEntity.ok(CommonSuccessResponse.response(true, ParticipantValidResponse.create(participantId, validJoinParty), "파티 초대가 가능한 회원입니다."));
     }
 
-    @GetMapping(value = "{ottId}/matching/week")
+    @GetMapping(value = "/{ottId}/matching/week")
     public ResponseEntity<?> countMatchingParticipant(@PathVariable(name = "ottId") Long ottId) {
         log.info("[Party Controller - Count Matching Participant]일주일간 매칭된 회원 수");
 
