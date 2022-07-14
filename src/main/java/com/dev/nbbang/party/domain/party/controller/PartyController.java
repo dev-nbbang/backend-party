@@ -50,7 +50,7 @@ public class PartyController {
         return ResponseEntity.status(HttpStatus.CREATED).body(CommonSuccessResponse.response(true, PartyCreateResponse.create(createdParty), "파티 생성이 완료되었습니다."));
     }
 
-    @GetMapping(value = "/{partyId}")
+    @GetMapping(value = "/{partyId}/detail")
     public ResponseEntity<?> findPartyByPartyId(@PathVariable(name = "partyId") Long partyId) {
         log.info("[Party Controller - Find Party By Party Id] 파티 조회");
 
