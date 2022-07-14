@@ -78,4 +78,9 @@ public interface PartyService {
 
     // 결제카드 변경
     void changeBilling(String billingKeyEnc, String memberId);
+
+    // 암호화
+    String aesEncoder(String plain);
+    // 암호화
+    String aesDecoder(String encText);
 }

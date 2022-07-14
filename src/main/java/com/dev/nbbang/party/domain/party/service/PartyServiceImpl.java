@@ -65,6 +65,7 @@ public class PartyServiceImpl implements PartyService {
     @Transactional
     public PartyDTO createParty(Party party) {
         // 추가 검증 로직 필요 시 추가
+        PartyDTO partyDTO = PartyDTO.create(party);
 
         // 1. 파티 생성
         Party createdParty = Optional.of(partyRepository.save(party)).orElseThrow(() -> new NoCreatePartyException("파티 생성에 실패했습니다.", NbbangException.NO_CREATE_PARTY));
@@ -468,5 +469,15 @@ public class PartyServiceImpl implements PartyService {
                 billing.updateBilling(billingKeyEnc, billing.getMemberId(), billing.getPartyId(), merchantId, billing.getStartYMD(), billing.getEndYMD(), billing.getBillingRegYMD());
             }
         }
+    }
+
+    @Override
+    public String aesEncoder(String plain) {
+        return aesUtil.encrypt(plain);
+    }
+
+    @Override
+    public String aesDecoder(String encText) {
+        return aesUtil.decrypt(encText);
     }
 }

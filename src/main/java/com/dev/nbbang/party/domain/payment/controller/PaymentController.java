@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.repository.query.Param;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -54,7 +55,7 @@ public class PaymentController {
         if(partyPrice != -1 && paymentService.paymentCheck(paymentInfo, partyPrice)) {
             //결제 이력 테이블에 결제 정보를 저장해줘야함함
             paymentService.paymentLogSave(impUid, memberId, partyId, "일반 결제 입니다.", partyPrice, 0);
-            return ResponseEntity.ok(CommonResponse.response(true, "결제 성공했습니다"));
+            return ResponseEntity.status(HttpStatus.CREATED).body(CommonResponse.response(true, "결제 성공했습니다"));
         } else {
             //환불
             int refundAmount = (int) paymentInfo.get("amount");
@@ -91,7 +92,7 @@ public class PaymentController {
             //스케쥴 생성 (포인트랑 쿠폰을 사용했으면 다음 결제부터는 다시 ott가격으롤 예약)
             String merchantId = paymentService.schedulePayment(paymentRequest.getCustomer_uid(), paymentRequest.getMerchant_uid(), ottPrice, LocalDateTime.now());
             paymentService.saveBilling(memberId,paymentRequest.getCustomer_uid(),merchantId,partyId, ottPrice);
-            return ResponseEntity.ok(CommonResponse.response(true, "결제 성공했습니다"));
+            return ResponseEntity.status(HttpStatus.CREATED).body(CommonResponse.response(true, "결제 성공했습니다"));
         }
 
         return ResponseEntity.ok(CommonResponse.response(false, "결제 실패했습니다"));
@@ -105,13 +106,13 @@ public class PaymentController {
         return ResponseEntity.ok(CommonSuccessResponse.response(true, paymentService.getPaymentLog(memberId, pageRequest), "결제 이력을 조회했습니다"));
     }
 
-    @GetMapping(value = "/cancel")
+    @DeleteMapping(value = "/cancel")
     public ResponseEntity<?> cancelSchedule(@Param("partyId") Long partyId, HttpServletRequest req) {
         log.info("[Payment Controller - cancle schedule] 스케쥴 취소");
         String memberId = req.getHeader("X-Authorization-Id");
         Billing billing = paymentService.getBilling(memberId, partyId);
         paymentService.deleteBilling(memberId, partyId, billing.getCustomerId(), billing.getMerchantId());
-        return ResponseEntity.ok(CommonResponse.response(true, "성공적으로 해지했습니다"));
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
 }

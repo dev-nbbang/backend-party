@@ -36,14 +36,14 @@ public class PartyCreateRequest {
         this.period = period;
     }
 
-    public static Party toEntity(PartyCreateRequest request, OttDTO ott) {
+    public static Party toEntity(PartyCreateRequest request, String ottAccPw, OttDTO ott) {
         return Party.builder()
                 .ott(OttDTO.toEntity(ott))
                 .leaderId(request.getLeaderId())
                 .maxHeadcount(request.getMaxHeadcount())
                 .regYmd(LocalDateTime.now())
                 .ottAccId(request.getOttAccId())
-                .ottAccPw(request.getOttAccPw())
+                .ottAccPw(ottAccPw)
                 .matchingType(request.getMatchingType())
                 .title(request.getTitle())
                 .partyDetail(request.getPartyDetail())
