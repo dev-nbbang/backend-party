@@ -29,6 +29,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 @RequestMapping(value = "/party")
+@CrossOrigin
 public class PartyController {
     private final PartyService partyService;
     private final OttService ottService;

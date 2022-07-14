@@ -28,6 +28,7 @@ import java.util.List;
 @RequestMapping(value = "/qna")
 @RequiredArgsConstructor
 @Slf4j
+@CrossOrigin
 public class QnaController {
     private final QnaService qnaService;
     private final PartyService partyService;
