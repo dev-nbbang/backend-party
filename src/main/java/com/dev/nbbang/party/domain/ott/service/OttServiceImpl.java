@@ -6,6 +6,7 @@ import com.dev.nbbang.party.domain.ott.exception.FailDeleteOttException;
 import com.dev.nbbang.party.domain.ott.exception.NoCreateOttException;
 import com.dev.nbbang.party.domain.ott.exception.NoSuchOttException;
 import com.dev.nbbang.party.domain.ott.repository.OttRepository;
+import com.dev.nbbang.party.domain.qna.exception.FailDeleteQnaException;
 import com.dev.nbbang.party.global.exception.NbbangException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

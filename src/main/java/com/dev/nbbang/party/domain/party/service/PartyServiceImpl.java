@@ -155,7 +155,7 @@ public class PartyServiceImpl implements PartyService {
 
         // 6-1. QNA 삭제 확인
         List<Qna> findQnaList = qnaRepository.findAllByParty(findParty);
-        if (!findQnaList.isEmpty())
+        if(!findQnaList.isEmpty())
             throw new FailDeleteQnaException("파티 질문 내역 삭제에 실패했습니다", NbbangException.FAIL_TO_DELETE_QNA);
 
         // 7. 파티 테이블 삭제

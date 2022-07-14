@@ -19,7 +19,6 @@ public interface PartyRepository extends JpaRepository<Party, Long> {
     Party save(Party party);
 
     // 파티 아이디로 파티 정보 조회
-
     Party findByPartyId(Long partyId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

@@ -20,5 +20,4 @@ public interface OttService {
 
     // Ott 서비스 삭제
     void deleteOtt(Long ottId);
-
 }
