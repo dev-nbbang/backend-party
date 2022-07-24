@@ -48,6 +48,7 @@ public class PartyServiceImpl implements PartyService {
     private final RedisUtil redisUtil;
     private final PaymentService paymentService;
     private final AesUtil aesUtil;
+    //    private final NotifyProducerKafka notifyProducerKafka;
     private final NotifyProducer notifyProducer;
     private final BillingRepository billingRepository;
 
@@ -142,12 +143,8 @@ public class PartyServiceImpl implements PartyService {
             if(!participant.getParticipantId().equals(leaderId)) {
                 String message = findParty.getOtt().getOttName() + " 파티장이 파티를 해체했습니다. 남은 기간에 비례해서 환불 예정입니다.";
 
-                try {
-                    notifyProducer.sendNotify(NotifyRequest.create(leaderId, participant.getParticipantId(), message, "PARTY", partyId));
-                } catch (JsonProcessingException e) {
-                    log.error("파티 해체 알림 메세지 전송에 실패했습니다.");
-                    log.error("실패 정보 participant : {}, partyId : {}", participant.getParticipantId(), partyId);
-                }
+                notifyProducer.sendNotify(NotifyRequest.create(leaderId, participant.getParticipantId(), message, "PARTY", partyId));
+
             }
         }
         // 6. QNA 테이블 삭제
@@ -397,11 +394,7 @@ public class PartyServiceImpl implements PartyService {
                 }
 
                 // 알림 전송
-                try {
-                    notifyProducer.sendNotify(NotifyRequest.create("manager", memberId, notifyDetail, notifyType, notifyTypeId));
-                } catch (JsonProcessingException e) {
-                    e.printStackTrace();
-                }
+                notifyProducer.sendNotify(NotifyRequest.create("manager", memberId, notifyDetail, notifyType, notifyTypeId));
 
                 // 파티원 참가 성공 후 파티에 빈자리 있으면 다시 파티큐에 넣어준다.
                 if(joinParty.getMaxHeadcount() > joinParty.getPresentHeadcount())

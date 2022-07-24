@@ -35,7 +35,7 @@ public class QnaController {
     private final NotifyProducer notifyProducer;
 
     @PostMapping(value = "/new")
-    public ResponseEntity<?> createQuestion(@RequestBody QuestionCreateRequest request, HttpServletRequest servletRequest) throws JsonProcessingException {
+    public ResponseEntity<?> createQuestion(@RequestBody QuestionCreateRequest request, HttpServletRequest servletRequest) {
         log.info("[Qna Controller - Create Question] 문의 등록");
 
         // requestBody로 받지만 혹시 여기서 사용하는게 좋은지 판단 필요
@@ -92,7 +92,7 @@ public class QnaController {
 
     @PutMapping(value = "/{qnaId}/answer/{answerType}")
     public ResponseEntity<?> manageAnswer(@PathVariable(name = "qnaId") Long qnaId, @PathVariable(name = "answerType") AnswerType answerType,
-                                          @RequestBody AnswerRequest request, HttpServletRequest servletRequest) throws JsonProcessingException {
+                                          @RequestBody AnswerRequest request, HttpServletRequest servletRequest) {
         log.info("[Qna Controller - Manage Question] 문의 관리 (답변 등록, 삭제 , 수정)");
 
         // 파티장 아이디 가져오기
@@ -102,7 +102,7 @@ public class QnaController {
         QnaDTO manageAnswer = qnaService.manageAnswer(qnaId, request.getAnswerDetail(), answerType);
 
         // 파티장이 문의 답변 한 경우
-        if(answerType == AnswerType.NEW)  {
+        if (answerType == AnswerType.NEW) {
             notifyProducer.sendNotify(
                     NotifyRequest.create(memberId, manageAnswer.getQnaSender(), "문의에 대한 답변이 등록되었습니다.", "QNA", manageAnswer.getQnaId())
             );

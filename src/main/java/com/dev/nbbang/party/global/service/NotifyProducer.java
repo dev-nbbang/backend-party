@@ -1,30 +1,23 @@
 package com.dev.nbbang.party.global.service;
 
-import com.dev.nbbang.party.domain.party.dto.request.MatchingRequest;
 import com.dev.nbbang.party.global.common.NotifyRequest;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
+@RequiredArgsConstructor
 public class NotifyProducer {
-    private final String TOPIC = "send-notify";
+    private final RabbitTemplate rabbitTemplate;
 
-    private final KafkaTemplate<String, String> kafkaTemplate;
-    private final ObjectMapper objectMapper;
+    private final String NOTIFY_EXCHANGE = "notify.exchange";       // 알림 보내는 경우 요청이 많은 것을 고려해서 새로운 Exchange로 사용
+    private final String NOTIFY_ROUTING_KEY = "notify.route";
 
-    @Transactional
-    public void sendNotify(NotifyRequest notifyRequest) throws JsonProcessingException {
-        log.info("[NotifyProducer] Party Service -> Notify Service");
-        String sendMessage = objectMapper.writeValueAsString(notifyRequest);
+    public void sendNotify(NotifyRequest notifyRequest) {
+        log.info("[NOTIFY QUEUE] message : {}", notifyRequest.toString());
 
-        log.info("[NotifyProducer] sendMessage : " + sendMessage);
-        kafkaTemplate.send(TOPIC, sendMessage);
+        rabbitTemplate.convertAndSend(NOTIFY_EXCHANGE, NOTIFY_ROUTING_KEY, notifyRequest);
     }
 }

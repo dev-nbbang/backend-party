@@ -1,3 +1,4 @@
+/*
 package com.dev.nbbang.party.global.config;
 
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -51,3 +52,4 @@ public class KafkaProducerConfig {
         return new KafkaTemplate<>(producerFactory());
     }
 }
+*/

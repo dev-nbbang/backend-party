@@ -5,45 +5,36 @@ import com.dev.nbbang.party.domain.payment.repository.PaymentLogRepository;
 import com.dev.nbbang.party.domain.qna.exception.FailDeleteQnaException;
 import com.dev.nbbang.party.domain.qna.repository.QnaRepository;
 import com.dev.nbbang.party.global.common.MemberLeaveResponse;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.support.Acknowledgment;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
-@Component
-@Slf4j
 @RequiredArgsConstructor
+@Slf4j
+@Component
 public class MemberLeaveConsumer {
     private final QnaRepository qnaRepository;
     private final PaymentLogRepository paymentLogRepository;
-    private final ObjectMapper objectMapper;
 
-    @Transactional
-    @KafkaListener(topics = "leave-member", groupId = "party-group-id")
-    public void receiverLeaveMemberMessage(String message, Acknowledgment ack) throws JsonProcessingException {
-        log.info("[Leave Member Message Receive] : 회원 탈퇴 이벤트 수신 (파티 서비스)");
-        log.info("[Received Message] : " + message);
+    private final String MEMBER_LEAVE_QUEUE = "member.leave.queue";
 
-        MemberLeaveResponse response = objectMapper.readValue(message, MemberLeaveResponse.class);
+    @RabbitListener(queues = {MEMBER_LEAVE_QUEUE})
+    public void receiveMemberLeaveMessage(MemberLeaveResponse response) {
+        log.info("[MEMBER LEAVE QUEUE Received Message : {}", response.toString());
 
         try {
-            // 회원 아이디로 QNA 전체 삭제
+            // 탈퇴한 회원 아이디로 QNA 전체 삭제
             qnaRepository.deleteAllByQnaSender(response.getMemberId());
-            try {
-                // 회원 아이디로 결제이력 전체 삭제
-                paymentLogRepository.deleteAllByMemberId(response.getMemberId());
 
-                // 모두 삭제 완료된 경우 응답 전송
-                ack.acknowledge();
-            } catch (FailDeletePaymentLogException e) {
-                log.info(response.getMemberId() + "님의 결제 이력 전체 삭제 실패");
-            }
-        } catch (FailDeleteQnaException e) {
-            log.warn(response.getMemberId() + "님의 QNA 전체 삭제 실패");
+            // 탈퇴한 회원 앙이디로 결제 이력 전체 삭제
+            paymentLogRepository.deleteAllByMemberId(response.getMemberId());
+        }
+        // 로직 예외 발생 시 메세지 재처리 필요 (2회 시도 후 DLX 처리)
+        catch (Exception e) {
+            log.error("회원 탈퇴 메세지 예외 발생 메세지 재처리 필요");
+
+            throw new IllegalArgumentException("회원 탈퇴 메세지 예외 발생 메세지 재처리 필요");
         }
     }
 }
