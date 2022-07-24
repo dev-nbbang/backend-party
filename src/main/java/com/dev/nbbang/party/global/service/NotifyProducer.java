@@ -20,4 +20,5 @@ public class NotifyProducer {
 
         rabbitTemplate.convertAndSend(NOTIFY_EXCHANGE, NOTIFY_ROUTING_KEY, notifyRequest);
     }
+
 }
