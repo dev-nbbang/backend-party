@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -19,6 +20,7 @@ public class MemberLeaveConsumer {
 
     private final String MEMBER_LEAVE_QUEUE = "member.leave.queue";
 
+    @Transactional
     @RabbitListener(queues = {MEMBER_LEAVE_QUEUE})
     public void receiveMemberLeaveMessage(MemberLeaveResponse response) {
         log.info("[MEMBER LEAVE QUEUE Received Message : {}", response.toString());
