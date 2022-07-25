@@ -48,7 +48,6 @@ public class PartyServiceImpl implements PartyService {
     private final RedisUtil redisUtil;
     private final PaymentService paymentService;
     private final AesUtil aesUtil;
-    //    private final NotifyProducerKafka notifyProducerKafka;
     private final NotifyProducer notifyProducer;
     private final BillingRepository billingRepository;
 

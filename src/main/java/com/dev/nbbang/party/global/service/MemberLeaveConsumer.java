@@ -18,10 +18,10 @@ public class MemberLeaveConsumer {
     private final QnaRepository qnaRepository;
     private final PaymentLogRepository paymentLogRepository;
 
-    private final String MEMBER_LEAVE_QUEUE = "member.leave.queue";
+    private final String MEMBER_LEAVE_PARTY_QUEUE = "member.leave.party.queue";
 
     @Transactional
-    @RabbitListener(queues = {MEMBER_LEAVE_QUEUE})
+    @RabbitListener(queues = {MEMBER_LEAVE_PARTY_QUEUE})
     public void receiveMemberLeaveMessage(MemberLeaveResponse response) {
         log.info("[MEMBER LEAVE QUEUE Received Message : {}", response.toString());
 
