@@ -195,6 +195,9 @@ public class PartyServiceImpl implements PartyService {
      */
     @Override
     public List<PartyDTO> findPartyList(Ott ott, Long partyId, int size) {
+        // 0. 최초 조회 시 음수값 전달받고 가장 큰 숫자로 변환해서 넣어준다.
+        if(partyId < 0) partyId = Long.MAX_VALUE;
+
         // 1. 마감 안된 파티 리스트 조회하기
         Slice<Party> findPartyList = partyRepository.findPartyList(ott, ott.getOttHeadcount(), partyId, PageRequest.of(0, size));
 
@@ -214,6 +217,9 @@ public class PartyServiceImpl implements PartyService {
      */
     @Override
     public List<PartyDTO> findPartyListByMatchingType(Integer matchingType, Ott ott, Long partyId, int size) {
+        // 0. 최초 조회 시 음수값 전달받고 가장 큰 숫자로 변환해서 넣어준다.
+        if(partyId < 0) partyId = Long.MAX_VALUE;
+
         // 1. 마감 안된 파티 리스트 조회하기
         Slice<Party> findPartyList = partyRepository.findPartyList(matchingType, ott, ott.getOttHeadcount(), partyId, PageRequest.of(0, size));
 
@@ -330,7 +336,7 @@ public class PartyServiceImpl implements PartyService {
 
     @Override
     public List<PartyDTO> findJoinPartyList(Ott ott, int maxHeadCount) {
-        List<Party> partyList = partyRepository.findAllByOttAndPresentHeadcountLessThanAndMatchingTypeOrderByRegYmd(ott, maxHeadCount, 2);
+        List<Party> partyList = partyRepository.findAutoJoinPartyList(ott, maxHeadCount, 2);
         List<PartyDTO> response = new ArrayList<>();
         for (Party party : partyList) {
             response.add(PartyDTO.create(party));

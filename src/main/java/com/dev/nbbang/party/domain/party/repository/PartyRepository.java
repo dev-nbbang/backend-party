@@ -40,6 +40,7 @@ public interface PartyRepository extends JpaRepository<Party, Long> {
     Party findByOttAndOttAccId(Ott ott, String ottAccId);
 
     //현재인원수가 max가 아닌 파티들 불러오기 생성일자 기준 asc
-    List<Party> findAllByOttAndPresentHeadcountLessThanAndMatchingTypeOrderByRegYmd(Ott ott, int maxHeadCount, int matchingType);
+    @Query("SELECT p FROM Party p WHERE p.ott = :ott AND p.presentHeadcount < :maxHeadCount AND p.matchingType = :matchingType ORDER BY p.regYmd")
+    List<Party> findAutoJoinPartyList(Ott ott, int maxHeadCount, int matchingType);
 
 }
