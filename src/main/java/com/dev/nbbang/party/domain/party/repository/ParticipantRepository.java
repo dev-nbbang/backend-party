@@ -17,7 +17,6 @@ public interface ParticipantRepository extends JpaRepository<Participant, Long> 
 
     // 정기 결제 파티 탈퇴 시 환불 정보 조회(파티 ?)
 
-
     // 파티 참가
     Participant save(Participant participant);
 
@@ -41,4 +40,8 @@ public interface ParticipantRepository extends JpaRepository<Participant, Long> 
     // 일주일 매칭 인원수 판단
     @Query("SELECT COUNT(p.id) FROM Participant p WHERE p.ottId = :ottId AND p.participantYmd >= :participantYmd")
     Integer matchingCountDuringWeek(@Param("ottId") Long ottId, @Param("participantYmd") LocalDateTime participantYmd);
+
+    // 회원 조회
+    @Query("SELECT p FROM Participant p join fetch Party pa where p.participantId = :participantId order by p.participantYmd desc")
+    List<Participant> findByParticipantId(Long participantId);
 }

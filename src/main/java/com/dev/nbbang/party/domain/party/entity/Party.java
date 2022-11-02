@@ -20,7 +20,7 @@ public class Party {
     @Column(name = "PARTY_ID")
     private Long partyId;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "OTT_ID")
     private Ott ott;     // OTT로 바뀌어야함
 

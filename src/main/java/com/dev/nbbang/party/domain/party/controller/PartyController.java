@@ -35,7 +35,7 @@ public class PartyController {
     private final OttService ottService;
     private final ParticipantService participantService;
 
-    private final String MATCHING_REDIS_PREFIX = "matching:";
+    private static final String MATCHING_REDIS_PREFIX = "matching:";
 
     @PostMapping(value = "/new")
     public ResponseEntity<?> createParty(@RequestBody PartyCreateRequest request) {
