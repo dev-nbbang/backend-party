@@ -18,7 +18,7 @@ public class Participant {
     @Column(name = "ID")
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "PARTY_ID")
     private Party party;
 

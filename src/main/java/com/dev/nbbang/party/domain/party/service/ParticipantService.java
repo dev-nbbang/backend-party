@@ -1,5 +1,9 @@
 package com.dev.nbbang.party.domain.party.service;
 
+import com.dev.nbbang.party.domain.party.dto.response.ParticipantPartyResponse;
+
+import java.util.List;
+
 public interface ParticipantService {
     // 일반 결제 파티 탈퇴 (환불 안해줌)
     void outFromParty(Long partyId, String participantId);
@@ -13,4 +17,8 @@ public interface ParticipantService {
 
     // 일주일 매칭 인원수 판단
     Integer matchingCountForWeek(Long ottId);
+
+    // 자신의 파티 조회
+    List<ParticipantPartyResponse> findMyParty(String participantId);
+
 }

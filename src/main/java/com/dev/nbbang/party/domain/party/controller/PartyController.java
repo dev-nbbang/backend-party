@@ -35,7 +35,7 @@ public class PartyController {
     private final OttService ottService;
     private final ParticipantService participantService;
 
-    private final String MATCHING_REDIS_PREFIX = "matching:";
+    private static final String MATCHING_REDIS_PREFIX = "matching:";
 
     @PostMapping(value = "/new")
     public ResponseEntity<?> createParty(@RequestBody PartyCreateRequest request) {
@@ -65,7 +65,7 @@ public class PartyController {
     public ResponseEntity<?> deleteParty(@PathVariable(name = "partyId") Long partyId, HttpServletRequest servletRequest) {
         log.info("[Party Controller - Delete Party] 파티 해체");
 
-        String memberId = servletRequest.getHeader("X-Authorization-Id");
+        String memberId = getMemberId(servletRequest);
 
         partyService.deleteParty(partyId, memberId);
 
@@ -76,7 +76,7 @@ public class PartyController {
     public ResponseEntity<?> updatePartyInformation(@RequestBody PartyModifyRequest request, @PathVariable(name = "partyId") Long partyId, HttpServletRequest servletRequest) {
         log.info("[Party Controller - Update Party Information] 파티 제목 및 상세 정보 수정");
 
-        String memberId = servletRequest.getHeader("X-Authorization-Id");
+        String memberId = getMemberId(servletRequest);
 
         PartyDTO updatedParty = partyService.updatePartyInformation(partyId, request.getTitle(), request.getPartyDetail(), memberId);
 
@@ -129,7 +129,7 @@ public class PartyController {
                                                @RequestBody PartyNoticeRequest request, HttpServletRequest servletRequest) {
         log.info("[Party Controller - Manage Party Notice] 파티장의 파티 공지 관리");
 
-        String memberId = servletRequest.getHeader("X-Authorization-Id");
+        String memberId = getMemberId(servletRequest);
 
         // 파티 공지 관리
         PartyDTO updatedParty = partyService.updatePartyNotice(noticeType, partyId, memberId, request.getPartyNotice());
@@ -142,7 +142,7 @@ public class PartyController {
         log.info("[Party Controller - Search Ott Acc Information] 소속 파티의 OTT 계정 조회");
 
         // 회원 아이디 추출 (파티원이 현재 파티에 소속되어 있는지 검증) -> 파티원 테이블에서 검증
-        String memberId = servletRequest.getHeader("X-Authorization-Id");
+        String memberId = getMemberId(servletRequest);
 
         // OTT 계정 조회
         PartyDTO findParty = partyService.findPartyByPartyId(partyId);
@@ -158,7 +158,7 @@ public class PartyController {
         log.info("[Party Controller -Modify Ott Acc Information] OTT 계정 정보 수정");
 
         // 회원 아이디 추출 (파티장 권한 확인 위해)
-        String memberId = servletRequest.getHeader("X-Authorization-Id");
+        String memberId = getMemberId(servletRequest);
 
         String encPwd = partyService.aesEncoder(request.getOttAccPw());
         // OTT 계정 정보 수정
@@ -172,7 +172,7 @@ public class PartyController {
         log.info("[Party Controller - Leave Party] 파티원이 파티를 탈퇴");
 
         // 회원 아이디 파싱
-        String memberId = servletRequest.getHeader("X-Authorization-Id");
+        String memberId = getMemberId(servletRequest);
 
         // 파티탈퇴 시작
         participantService.outFromParty(partyId, memberId);
@@ -200,10 +200,25 @@ public class PartyController {
         return ResponseEntity.ok(CommonSuccessResponse.response(true, MatchingCountResponse.create(ottId, matchingCount), "매칭 인원수 조회에 성공했습니다."));
     }
 
+    /**
+     * 나의 파티 목록 조회
+     *
+     * @param servletRequest
+     * @return
+     */
+    @GetMapping(value = "/my-party")
+    public ResponseEntity<CommonSuccessResponse> findMyParty(HttpServletRequest servletRequest) {
+        log.info("[Party Controller - find My Party] 내 파티 조회");
+
+        String memberId = getMemberId(servletRequest);
+
+        return ResponseEntity.ok(CommonSuccessResponse.response(true, participantService.findMyParty(memberId), "내 파티 조회에 성공했습니다."));
+    }
+
     @PostMapping(value = "/join-party")
     public ResponseEntity<?> joinParty(@RequestBody PartyJoinRequest partyJoinRequest, HttpServletRequest req) {
         log.info("[Party Controller - Join Party] 파티 가입");
-        String memberId = req.getHeader("X-Authorization-Id");
+        String memberId = getMemberId(req);
         //파티 인원수 확인 및 파티 가입 가능시 파티 참가자 추가 불가시 false
         partyService.isPartyJoin(partyJoinRequest.getPartyId(), memberId);
         return ResponseEntity.status(HttpStatus.CREATED).body((CommonResponse.response(true, "파티 가입 성공")));
@@ -212,7 +227,7 @@ public class PartyController {
     @PostMapping(value = "/matching-apply")
     public ResponseEntity<?> matchingApply(@RequestBody MathcingApplyRequest MathcingApplyRequest, HttpServletRequest req) {
         log.info("[Party Controller - Matching Apply] 매칭 대기열 저장");
-        String memberId = req.getHeader("X-Authorization-Id");
+        String memberId = getMemberId(req);
         Long ottId = MathcingApplyRequest.getOttId();
         String billingKey = MathcingApplyRequest.getBillingKey();
         partyService.setMatching(ottId, billingKey, memberId);
@@ -222,24 +237,24 @@ public class PartyController {
     @GetMapping(value = "/matching-list")
     public ResponseEntity<?> getMathcingList(HttpServletRequest req) {
         log.info("[Party Controller - get Matching List] 매칭 대기열 리스트 조회");
-        String memberId = req.getHeader("X-Authorization-Id");
+        String memberId = getMemberId(req);
         List<String> ottIds = partyService.matchingList(memberId);
-        if(ottIds==null) throw new NoSuchPartyException("매칭 대기열이 없습니다", NbbangException.NOT_FOUND_PARTY);
+        if (ottIds == null) throw new NoSuchPartyException("매칭 대기열이 없습니다", NbbangException.NOT_FOUND_PARTY);
         return ResponseEntity.ok(CommonSuccessResponse.response(true, ottIds, "매칭 대기열 리스트입니다"));
     }
 
-    @DeleteMapping(value="/matching-list")
+    @DeleteMapping(value = "/matching-list")
     public ResponseEntity<?> deleteMathcingList(@RequestBody MatchingListRequest matchingListRequest, HttpServletRequest req) {
         log.info("[Party Controller - Delete Matching List] 매칭 대기열 삭제");
-        String memberId = req.getHeader("X-Authorization-Id");
+        String memberId = getMemberId(req);
         partyService.deleteMatchingList(matchingListRequest.getOttIds(), memberId);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
-    @PutMapping(value="/billing")
+    @PutMapping(value = "/billing")
     public ResponseEntity<?> updateBilling(@RequestBody MatchingBillingRequest matchingBillingRequest, HttpServletRequest req) {
         log.info("[Party Controller - Update Billing] 빌링키 값 수정");
-        String memberId = req.getHeader("X-Authorization-Id");
+        String memberId = getMemberId(req);
         partyService.changeBilling(matchingBillingRequest.getBillingKey(), memberId);
         return ResponseEntity.status(HttpStatus.CREATED).body(CommonResponse.response(true, "빌링키 수정 완료"));
     }
@@ -265,5 +280,15 @@ public class PartyController {
             //list에 memberId와 rdb에 partyId로 매칭 (파티추가및수정) 여기서 실패하면 다른 rdb꺼 실행
             partyService.matchingParty(partyDTOList, ott, matchSize);
         }
+    }
+
+    /**
+     * 서블릿 요청에서 헤더 파싱
+     *
+     * @param servletRequest
+     * @return 회원 아이디
+     */
+    private String getMemberId(HttpServletRequest servletRequest) {
+        return servletRequest.getHeader("X-Authorization-Id");
     }
 }
