@@ -5,6 +5,7 @@ import com.dev.nbbang.party.domain.ott.entity.Ott;
 import com.dev.nbbang.party.domain.ott.service.OttService;
 import com.dev.nbbang.party.domain.party.dto.PartyDTO;
 import com.dev.nbbang.party.domain.party.dto.request.*;
+import com.dev.nbbang.party.domain.party.dto.response.ParticipantPartyResponse;
 import com.dev.nbbang.party.domain.party.dto.response.ParticipantValidResponse;
 import com.dev.nbbang.party.domain.party.entity.Participant;
 import com.dev.nbbang.party.domain.party.entity.Party;
@@ -634,6 +635,73 @@ class PartyControllerTest {
 
         // then
         assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+    }
+
+    @Test
+    @DisplayName("파티 컨트롤러 : 내 파티 조회 성공")
+    void 내_파티_조회_성공() throws Exception {
+        // given
+        String uri = "/party/my-party";
+        given(participantService.findMyParty(anyString())).willReturn(testParticipantListByOne());
+
+        // when
+        MockHttpServletResponse response = mvc.perform(get(uri)
+                .header("X-Authorization-Id", "zayson"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(true))
+                .andExpect(jsonPath("$.data.[0].leaderId").value("leader"))
+                .andExpect(jsonPath("$.data.[0].matchingType").value(1))
+                .andExpect(jsonPath("$.data.[0].maxHeadcount").value(5))
+                .andExpect(jsonPath("$.data.[0].ott.ottId").value(1))
+                .andReturn().getResponse();
+
+        // then
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+    }
+
+    @Test
+    @DisplayName("퍄티 컨트롤러 : 내 파티 조회 실패")
+    void 내_파티_조회_실패() throws Exception {
+        // given
+        String uri = "/party/my-party";
+        given(participantService.findMyParty(anyString())).willThrow(new NoJoinPartyException("error", NbbangException.NO_JOIN_PARTY));
+
+        // when
+        MockHttpServletResponse response = mvc.perform(get(uri)
+                .header("X-Authorization-Id", "zayson"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(false))
+                .andExpect(jsonPath("$.message").exists())
+                .andReturn().getResponse();
+
+        // then
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+    }
+
+    public static List<ParticipantPartyResponse> testParticipantListByOne() {
+        Party party1 = makeParty("leader",1, 5,1L,1L,30, 2, 1000L);
+        Party party2 = makeParty("leader",1, 5,2L,2L,30, 2, 1000L);
+        Party party3 = makeParty("leader",1, 5,3L,3L,30, 2, 1000L);
+
+        return new ArrayList<>(List.of(
+                ParticipantPartyResponse.create(party1),
+                ParticipantPartyResponse.create(party2),
+                ParticipantPartyResponse.create(party3)
+        ));
+    }
+
+    private static Party makeParty(String leaderId, Integer matchingType, Integer maxHeadcount, Long ottId, Long partyId, Integer period, Integer presentHeadcount, Long price) {
+        return Party.builder().leaderId(leaderId)
+                .matchingType(matchingType)
+                .maxHeadcount(maxHeadcount)
+                .ott(Ott.builder().ottId(ottId).build())
+                .partyId(partyId)
+                .period(period)
+                .presentHeadcount(presentHeadcount)
+                .price(price)
+                .build();
     }
 
     private static Ott testOttBuilder() {

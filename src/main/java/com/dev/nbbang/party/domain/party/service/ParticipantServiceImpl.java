@@ -1,7 +1,10 @@
 package com.dev.nbbang.party.domain.party.service;
 
+import com.dev.nbbang.party.domain.party.dto.response.ParticipantPartyResponse;
+import com.dev.nbbang.party.domain.party.entity.Participant;
 import com.dev.nbbang.party.domain.party.entity.Party;
 import com.dev.nbbang.party.domain.party.exception.AlreadyJoinPartyException;
+import com.dev.nbbang.party.domain.party.exception.NoJoinPartyException;
 import com.dev.nbbang.party.domain.party.exception.NoSuchParticipantException;
 import com.dev.nbbang.party.domain.party.exception.NoSuchPartyException;
 import com.dev.nbbang.party.domain.party.repository.ParticipantRepository;
@@ -12,7 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -79,5 +84,24 @@ public class ParticipantServiceImpl implements ParticipantService {
     @Override
     public Integer matchingCountForWeek(Long ottId) {
         return participantRepository.matchingCountDuringWeek(ottId, LocalDateTime.now().minusWeeks(1L));
+    }
+
+    /**
+     * 자신이 속한 파티 리스트 조회
+     *
+     * @param participantId 파티원 아이디
+     * @return 자신이 속한 파티 정보
+     */
+    @Override
+    public List<ParticipantPartyResponse> findMyParty(String participantId) {
+        List<Participant> findPartyList = participantRepository.findByParticipantId(participantId);
+
+        // 가입된 파티가 없는 경우
+        if(findPartyList.isEmpty())
+            throw new NoJoinPartyException("가입된 파티가 존재하지 않습니다.", NbbangException.NO_JOIN_PARTY);
+
+        return findPartyList.stream()
+                .map(participant -> ParticipantPartyResponse.create(participant.getParty()))
+                .collect(Collectors.toList());
     }
 }

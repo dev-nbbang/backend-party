@@ -132,6 +132,27 @@ class ParticipantRepositoryTest {
         assertThat(matchingCount).isEqualTo(3);
     }
 
+    @Test
+    @DisplayName("파티원 레포지토리 : 회원의 가입한 파티 목록 조회")
+    void 가입한_파티_목록_조회() {
+        String participantId = "K-2197723261";
+
+        // when
+        List<Participant> findParticipant = participantRepository.findByParticipantId(participantId);
+
+        // then
+        assertThat(findParticipant.size()).isEqualTo(3);
+        assertAll(
+                () -> {
+                    assertThat(findParticipant.get(0).getParty().getPartyId()).isEqualTo(6L);
+                    assertThat(findParticipant.get(1).getParty().getPartyId()).isEqualTo(2L);
+                    assertThat(findParticipant.get(2).getParty().getPartyId()).isEqualTo(3L);
+                    assertThat(findParticipant.get(0).getParty().getOtt().getOttId()).isEqualTo(1L);
+                    assertThat(findParticipant.get(0).getParty().getOtt().getOttName()).isEqualTo("넷플릭스");
+                }
+        );
+    }
+
     public static Participant testParticipant(String participantId) {
         return Participant.builder()
                 .party(testParty())

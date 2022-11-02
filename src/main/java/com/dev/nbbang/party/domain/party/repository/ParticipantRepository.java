@@ -42,6 +42,6 @@ public interface ParticipantRepository extends JpaRepository<Participant, Long> 
     Integer matchingCountDuringWeek(@Param("ottId") Long ottId, @Param("participantYmd") LocalDateTime participantYmd);
 
     // 회원 조회
-    @Query("SELECT p FROM Participant p join fetch Party pa where p.participantId = :participantId order by p.participantYmd desc")
-    List<Participant> findByParticipantId(Long participantId);
+    @Query("SELECT p FROM Participant p join fetch p.party where p.participantId = :participantId order by p.participantYmd desc")
+    List<Participant> findByParticipantId(@Param("participantId") String participantId);
 }
